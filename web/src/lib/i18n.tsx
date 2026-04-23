@@ -35,7 +35,7 @@ export const T = {
   all: { en: "All", te: "అన్నీ" },
   male: { en: "Male", te: "పురుషుడు" },
   female: { en: "Female", te: "స్త్రీ" },
-  tier: { en: "Tier", te: "శ్రేణి" },
+  tierLabel: { en: "Tier", te: "శ్రేణి" },
   common: {
     home: { en: "Home", te: "హోమ్" },
     myDashboard: { en: "My Dashboard", te: "నా డ్యాష్‌బోర్డ్" },

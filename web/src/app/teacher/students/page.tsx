@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
 import type { RosterStudent } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
-import { pctFormat, fmtInt } from "@/lib/utils";
+import { pctFormat, fmtInt, cn } from "@/lib/utils";
 import Link from "next/link";
 import { Search, Filter, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -17,6 +17,7 @@ export default function StudentsListPage() {
   const [genderFilter, setGenderFilter] = useState<string>("All");
   const [tierFilter, setTierFilter] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
   const pageSize = 15;
 
   useEffect(() => {
@@ -56,7 +57,15 @@ export default function StudentsListPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 border border-zinc-200 rounded-lg text-sm font-medium hover:bg-zinc-50">
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm font-medium transition-all",
+              showFilters 
+                ? "bg-[color:var(--ap-navy)] text-white border-[color:var(--ap-navy)]" 
+                : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+            )}
+          >
             <Filter className="h-4 w-4" /> {T.common.filter[lang]}
           </button>
           <button className="flex items-center gap-2 px-3 py-1.5 bg-[color:var(--ap-navy)] text-white rounded-lg text-sm font-medium hover:opacity-90">
@@ -66,7 +75,10 @@ export default function StudentsListPage() {
       </header>
 
       <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex flex-wrap items-center gap-4">
+        <div className={cn(
+          "p-4 border-b border-zinc-100 bg-zinc-50/50 flex flex-wrap items-center gap-4 transition-all duration-300 overflow-hidden",
+          showFilters ? "max-h-[200px] opacity-100" : "max-h-0 py-0 opacity-0 border-none"
+        )}>
           <div className="relative max-w-xs flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <input 
@@ -92,7 +104,7 @@ export default function StudentsListPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500">{T.tier[lang]}:</span>
+            <span className="text-sm text-zinc-500">{T.tierLabel[lang]}:</span>
             <select 
               value={tierFilter}
               onChange={(e) => setTierFilter(e.target.value)}

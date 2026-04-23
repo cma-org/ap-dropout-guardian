@@ -47,36 +47,92 @@ export default function Sidebar() {
   const navItems = getNav();
 
   return (
-    <aside className="w-64 shrink-0 border-r border-zinc-200 bg-white hidden md:block">
-      <div className="sticky top-[64px] h-[calc(100vh-64px)] flex flex-col p-4">
-        <nav className="flex-1 space-y-1">
-          {navItems.map((n) => {
-            const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-                  active
-                    ? "bg-[color:var(--ap-navy)] text-white"
-                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-                )}
-              >
-                {n.icon}
-                {n.label}
-              </Link>
-            );
-          })}
-        </nav>
-        
-        <div className="mt-auto pt-4 border-t border-zinc-100">
-          <div className="px-3 py-2 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-            {T.common.systemStatus[lang]}
+    <aside className="w-64 shrink-0 border-r border-zinc-200 bg-zinc-50/30 hidden md:block">
+      <div className="sticky top-[64px] h-[calc(100vh-64px)] flex flex-col px-3 py-6">
+        <div className="flex-1 space-y-8">
+          {/* Main Navigation */}
+          <div>
+            <div className="px-4 mb-3 text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">
+              {lang === "en" ? "Main Menu" : "ప్రధాన మెనూ"}
+            </div>
+            <nav className="space-y-1">
+              {navItems.filter(n => !n.href.includes('overview') && !n.href.includes('map')).map((n) => {
+                const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    className={cn(
+                      "group flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
+                      active
+                        ? "bg-white text-[color:var(--ap-navy)] shadow-sm border border-zinc-200/50"
+                        : "text-zinc-500 hover:text-zinc-900 hover:bg-white/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      active ? "bg-[color:var(--ap-navy)] text-white" : "bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-600"
+                    )}>
+                      {n.icon}
+                    </div>
+                    {n.label}
+                    {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[color:var(--ap-navy)]" />}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
-          <div className="px-3 py-2 flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs text-zinc-500">{T.common.liveDataFeed[lang]}</span>
+
+          {/* Analytics & Reports */}
+          <div>
+            <div className="px-4 mb-3 text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">
+              {lang === "en" ? "Analytics" : "విశ్లేషణలు"}
+            </div>
+            <nav className="space-y-1">
+              {navItems.filter(n => n.href.includes('overview') || n.href.includes('map')).map((n) => {
+                const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    className={cn(
+                      "group flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
+                      active
+                        ? "bg-white text-[color:var(--ap-navy)] shadow-sm border border-zinc-200/50"
+                        : "text-zinc-500 hover:text-zinc-900 hover:bg-white/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      active ? "bg-[color:var(--ap-navy)] text-white" : "bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-600"
+                    )}>
+                      {n.icon}
+                    </div>
+                    {n.label}
+                    {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[color:var(--ap-navy)]" />}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+        
+        {/* Status Card */}
+        <div className="mt-auto p-4 rounded-2xl bg-white border border-zinc-200/60 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+              {T.common.systemStatus[lang]}
+            </div>
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-50 rounded-lg">
+              <Database className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-zinc-900">{T.common.liveDataFeed[lang]}</div>
+              <div className="text-[10px] text-zinc-500">{lang === "en" ? "Syncing every 5m" : "ప్రతి 5 నిమిషాలకు"}</div>
+            </div>
           </div>
         </div>
       </div>
