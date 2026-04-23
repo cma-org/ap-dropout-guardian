@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv/
+
+# Large data & model artifacts (kept local only)
+data/
+artifacts/
+models/*.pkl
+models/*.joblib
+models/*.json
+cache/
+*.parquet
+
+# Next.js
+web/.next/
+web/node_modules/
+web/public/data/
+
+# Misc
+.DS_Store
+*.log
+.env
+.env.local

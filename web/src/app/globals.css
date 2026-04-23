@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8fa;
+  --foreground: #0b1f3a;
+  --ap-navy: #0b3b6f;
+  --ap-orange: #f47b20;
+  --ap-green: #138a36;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ap-navy: var(--ap-navy);
+  --color-ap-orange: var(--ap-orange);
+  --color-ap-green: var(--ap-green);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* leaflet fixes */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
