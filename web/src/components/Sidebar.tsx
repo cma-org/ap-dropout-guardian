@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_DASHBOARD } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database } from "lucide-react";
+import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity } from "lucide-react";
 
 export default function Sidebar() {
   const { lang } = useLang();
@@ -26,6 +26,14 @@ export default function Sidebar() {
       if (user.role === "teacher") {
         nav.push({ href: "/teacher/students", label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
         nav.push({ href: "/teacher/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
+        nav.push({ href: "/teacher/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
+      }
+
+      if (user.role === "hm") {
+        nav.push({ href: "/hm/students", label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
+        nav.push({ href: "/hm/teachers", label: T.nav.teachers[lang], icon: <Users className="h-4 w-4" /> });
+        nav.push({ href: "/hm/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
+        nav.push({ href: "/hm/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
       }
 
       // District Heatmap - ONLY for district officer and above (rtgs)

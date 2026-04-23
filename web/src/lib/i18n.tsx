@@ -31,6 +31,7 @@ export const T = {
   showing: { en: "Showing", te: "చూపిస్తున్నాము" },
   of: { en: "of", te: "మొత్తం" },
   students: { en: "students", te: "విద్యార్థులు" },
+  grade: { en: "Grade", te: "తరగతి" },
   page: { en: "Page", te: "పేజీ" },
   all: { en: "All", te: "అన్నీ" },
   male: { en: "Male", te: "పురుషుడు" },
@@ -74,6 +75,8 @@ export const T = {
     teacher: { en: "School Browser", te: "పాఠశాల బ్రౌజర్" },
     students: { en: "Students List", te: "విద్యార్థుల జాబితా" },
     data: { en: "Data Management", te: "డేటా నిర్వహణ" },
+    teachers: { en: "Teachers List", te: "ఉపాధ్యాయుల జాబితా" },
+    analytics: { en: "Analytics", te: "విశ్లేషణలు" },
   },
   overview: {
     title: { en: "Model Performance & System Overview", te: "మోడల్ పనితీరు మరియు వ్యవస్థ సారాంశం" },
@@ -169,6 +172,8 @@ export const T = {
     economicsDesc: { en: "Household income, occupation, and migration status.", te: "కుటుంబ ఆదాయం, వృత్తి మరియు వలస స్థితి." },
     academicTitle: { en: "Academic Scores", te: "అకడమిక్ స్కోర్లు" },
     academicDesc: { en: "FA/SA exam marks and formative assessment results.", te: "FA/SA పరీక్ష మార్కులు మరియు ఫార్మేటివ్ అసెస్‌మెంట్ ఫలితాలు." },
+    teacherInfoTitle: { en: "Teacher Information", te: "ఉపాధ్యాయుల సమాచారం" },
+    teacherInfoDesc: { en: "Staff directory, subjects taught, and contact details.", te: "సిబ్బంది డైరెక్టరీ, బోధించే సబ్జెక్టులు మరియు సంప్రదింపు వివరాలు." },
   },
   interventions: {
     logTitle: { en: "Log Intervention — Student #{id}", te: "జోక్యాన్ని నమోదు చేయండి — విద్యార్థి #{id}" },
