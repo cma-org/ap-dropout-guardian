@@ -63,10 +63,15 @@ function getPersonalisedSchemes(student: StudentDetail, base: Scheme[]): Scheme[
   return out;
 }
 
-function SchemeTag({ gender, caste }: { gender: number; caste: number }) {
+function SchemeTag({ gender, caste, lang }: { gender: number; caste: number; lang: string }) {
   const tags: string[] = [];
-  if (gender === 2) tags.push("Female");
-  const c = { 1: "OC", 2: "BC", 3: "SC", 4: "ST" } as Record<number, string>;
+  if (gender === 2) tags.push(lang === "en" ? "Female" : "స్త్రీ");
+  const c = { 
+    1: lang === "en" ? "OC" : "OC", 
+    2: lang === "en" ? "BC" : "BC", 
+    3: lang === "en" ? "SC" : "SC", 
+    4: lang === "en" ? "ST" : "ST" 
+  } as Record<number, string>;
   if (c[caste]) tags.push(c[caste]);
   if (!tags.length) return null;
   return (
@@ -74,12 +79,12 @@ function SchemeTag({ gender, caste }: { gender: number; caste: number }) {
       {tags.map(t => (
         <span key={t} className="text-[10px] uppercase tracking-wide bg-zinc-100 border border-zinc-200 text-zinc-600 rounded px-2 py-0.5 font-medium">{t}</span>
       ))}
-      <span className="text-[10px] text-zinc-400 self-center">— schemes personalised</span>
+      <span className="text-[10px] text-zinc-400 self-center">— {lang === "en" ? "schemes personalised" : "వ్యక్తిగత పథకాలు"}</span>
     </div>
   );
 }
 
-function RiskGauge({ score }: { score: number }) {
+function RiskGauge({ score, lang }: { score: number; lang: "en" | "te" }) {
   const pct = Math.round(score * 100);
   const color = score >= 0.85 ? "#dc2626" : score >= 0.65 ? "#f97316" : score >= 0.5 ? "#eab308" : "#16a34a";
   return (
@@ -100,7 +105,7 @@ function RiskGauge({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className="text-4xl font-bold tabular-nums" style={{ color }}>{pct}</div>
-        <div className="text-xs text-zinc-500 uppercase tracking-wide">Risk</div>
+        <div className="text-xs text-zinc-500 uppercase tracking-wide">{lang === "en" ? "Risk" : "ప్రమాదం"}</div>
       </div>
     </div>
   );
@@ -178,7 +183,7 @@ export default function StudentDetailClient({
             </div>
           </div>
         </div>
-        <RiskGauge score={student.risk_score} />
+        <RiskGauge score={student.risk_score} lang={lang as "en" | "te"} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -294,7 +299,7 @@ export default function StudentDetailClient({
 
         <div className="mt-4 rounded-lg bg-white p-4 border">
           <h3 className="text-xs font-semibold text-zinc-700 uppercase tracking-wide mb-2">{T.student.schemes[lang]}</h3>
-          <SchemeTag gender={student.gender} caste={student.caste_clean} />
+          <SchemeTag gender={student.gender} caste={student.caste_clean} lang={lang} />
           <ul className="space-y-1.5">
             {getPersonalisedSchemes(student, counsellorTemplate.schemes).map((s, i) => (
               <li key={i} className="flex items-start gap-2 text-sm">

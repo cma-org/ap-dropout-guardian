@@ -69,14 +69,14 @@ export default function Header() {
                     className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
                   >
                     <LayoutDashboard className="h-4 w-4 text-zinc-400" />
-                    My Dashboard
+                    {T.common.myDashboard[lang]}
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign out
+                    {T.common.signOut[lang]}
                   </button>
                 </div>
               )}
@@ -86,7 +86,7 @@ export default function Header() {
               href="/login"
               className="ml-2 px-4 py-1.5 rounded-md bg-[color:var(--ap-orange)] hover:opacity-90 text-sm font-medium"
             >
-              Sign in
+              {T.common.signIn[lang]}
             </Link>
           )}
         </nav>

@@ -15,14 +15,14 @@ export default function Sidebar() {
     const nav = [];
 
     // All users see Home and Overview
-    nav.push({ href: "/", label: "Home", icon: <Home className="h-4 w-4" /> });
+    nav.push({ href: "/", label: T.common.home[lang], icon: <Home className="h-4 w-4" /> });
     nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
 
     if (user) {
       // My Dashboard (role specific)
       nav.unshift({ 
         href: ROLE_DASHBOARD[user.role], 
-        label: "My Dashboard", 
+        label: T.common.myDashboard[lang], 
         icon: <LayoutDashboard className="h-4 w-4" /> 
       });
 
@@ -72,11 +72,11 @@ export default function Sidebar() {
         
         <div className="mt-auto pt-4 border-t border-zinc-100">
           <div className="px-3 py-2 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-            System Status
+            {T.common.systemStatus[lang]}
           </div>
           <div className="px-3 py-2 flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs text-zinc-500">Live Data Feed</span>
+            <span className="text-xs text-zinc-500">{T.common.liveDataFeed[lang]}</span>
           </div>
         </div>
       </div>
