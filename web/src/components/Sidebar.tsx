@@ -14,13 +14,9 @@ export default function Sidebar() {
   const getNav = () => {
     const nav = [];
 
-    // All users see Home and Overview
-    nav.push({ href: "/", label: T.common.home[lang], icon: <Home className="h-4 w-4" /> });
-    nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
-
     if (user) {
       // My Dashboard (role specific)
-      nav.unshift({ 
+      nav.push({ 
         href: ROLE_DASHBOARD[user.role], 
         label: T.common.myDashboard[lang], 
         icon: <LayoutDashboard className="h-4 w-4" /> 
@@ -36,8 +32,13 @@ export default function Sidebar() {
       if (user.role === "district" || user.role === "rtgs") {
         nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
+
+      // Model Overview is analytics
+      nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
     } else {
-      // Guest users see map too
+      // Guest users see Home, Overview and Map
+      nav.push({ href: "/", label: T.common.home[lang], icon: <Home className="h-4 w-4" /> });
+      nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
       nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
     }
 
