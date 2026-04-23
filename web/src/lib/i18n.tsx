@@ -32,6 +32,8 @@ export const T = {
     overview: { en: "Model Overview", te: "మోడల్ సారాంశం" },
     map: { en: "District Heatmap", te: "జిల్లా హీట్‌మ్యాప్" },
     teacher: { en: "School Browser", te: "పాఠశాల బ్రౌజర్" },
+    students: { en: "Students List", te: "విద్యార్థుల జాబితా" },
+    data: { en: "Data Management", te: "డేటా నిర్వహణ" },
   },
   overview: {
     title: { en: "Model Performance & System Overview", te: "మోడల్ పనితీరు మరియు వ్యవస్థ సారాంశం" },
