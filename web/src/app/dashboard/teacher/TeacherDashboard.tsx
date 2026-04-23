@@ -180,7 +180,7 @@ export default function TeacherDashboard({
           ))}
           {displayed.length > 30 && (
             <div className="px-5 py-3 text-sm text-zinc-500 text-center">
-              {T.teacherDashboard.showingTop[lang].replace("{count}", displayed.length.toString())}. <Link href="/teacher" className="text-[color:var(--ap-navy)] underline">{T.teacherDashboard.seeFullRoster[lang]} →</Link>
+              {T.teacherDashboard.showingTop[lang].replace("{count}", displayed.length.toString())}. <Link href="/teacher/students" className="text-[color:var(--ap-navy)] underline">{T.teacherDashboard.seeFullRoster[lang]} →</Link>
             </div>
           )}
         </div>
@@ -195,7 +195,7 @@ export default function TeacherDashboard({
           </div>
           <ArrowUpRight className="h-5 w-5 text-red-400 group-hover:text-red-600" />
         </Link>
-        <Link href="/teacher" className="rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 transition flex items-center justify-between group">
+        <Link href="/teacher/students" className="rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 transition flex items-center justify-between group">
           <div>
             <div className="font-semibold text-zinc-900">{T.teacherDashboard.fullBrowser[lang]}</div>
             <div className="text-sm text-zinc-500 mt-0.5">{T.teacherDashboard.fullBrowserSub[lang]}</div>

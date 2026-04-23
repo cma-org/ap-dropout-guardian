@@ -6,7 +6,7 @@ import type { RosterStudent } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
 import { pctFormat, fmtInt } from "@/lib/utils";
 import Link from "next/link";
-import { Search, Filter, Download } from "lucide-react";
+import { Search, Filter, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function StudentsListPage() {
   const { user } = useAuth();
@@ -14,6 +14,10 @@ export default function StudentsListPage() {
   const [students, setStudents] = useState<RosterStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [genderFilter, setGenderFilter] = useState<string>("All");
+  const [tierFilter, setTierFilter] = useState<string>("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   useEffect(() => {
     if (user?.schoolId) {
@@ -26,9 +30,21 @@ export default function StudentsListPage() {
     }
   }, [user]);
 
-  const filtered = students.filter(s => 
-    String(s.child_sno).includes(search)
-  );
+  const filtered = students.filter(s => {
+    const matchesSearch = String(s.child_sno).includes(search);
+    const matchesGender = genderFilter === "All" || 
+      (genderFilter === "Male" && s.gender_label === "Male") ||
+      (genderFilter === "Female" && s.gender_label === "Female");
+    const matchesTier = tierFilter === "All" || s.tier === tierFilter;
+    return matchesSearch && matchesGender && matchesTier;
+  });
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, genderFilter, tierFilter]);
 
   return (
     <div className="space-y-6">
@@ -50,8 +66,8 @@ export default function StudentsListPage() {
       </header>
 
       <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-zinc-100 bg-zinc-50/50">
-          <div className="relative max-w-md">
+        <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex flex-wrap items-center gap-4">
+          <div className="relative max-w-xs flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <input 
               type="text"
@@ -60,6 +76,34 @@ export default function StudentsListPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-500">{T.student.gender[lang]}:</span>
+            <select 
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value)}
+              className="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
+            >
+              <option value="All">{T.all[lang]}</option>
+              <option value="Male">{T.male[lang]}</option>
+              <option value="Female">{T.female[lang]}</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-500">{T.tier[lang]}:</span>
+            <select 
+              value={tierFilter}
+              onChange={(e) => setTierFilter(e.target.value)}
+              className="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
+            >
+              <option value="All">{T.all[lang]}</option>
+              <option value="Critical">{T.tier.Critical[lang]}</option>
+              <option value="High">{T.tier.High[lang]}</option>
+              <option value="Medium">{T.tier.Medium[lang]}</option>
+              <option value="Low">{T.tier.Low[lang]}</option>
+            </select>
           </div>
         </div>
 
@@ -82,12 +126,12 @@ export default function StudentsListPage() {
                     <td colSpan={6} className="px-6 py-4"><div className="h-4 bg-zinc-100 rounded w-full"></div></td>
                   </tr>
                 ))
-              ) : filtered.length === 0 ? (
+              ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">{T.teacherView.noStudentsFound[lang]}</td>
                 </tr>
               ) : (
-                filtered.map(s => (
+                paginated.map(s => (
                   <tr key={s.child_sno} className="hover:bg-zinc-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <Link href={`/student/${s.child_sno}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline">
@@ -107,6 +151,34 @@ export default function StudentsListPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+           <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/30 flex items-center justify-between">
+             <div className="text-sm text-zinc-500">
+               {T.showing[lang]} <span className="font-medium text-zinc-900">{(currentPage - 1) * pageSize + 1}</span> - <span className="font-medium text-zinc-900">{Math.min(currentPage * pageSize, filtered.length)}</span> {T.of[lang]} <span className="font-medium text-zinc-900">{filtered.length}</span> {T.students[lang]}
+             </div>
+             <div className="flex items-center gap-2">
+               <button 
+                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                 disabled={currentPage === 1}
+                 className="p-1 rounded-md border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 disabled:hover:bg-transparent"
+               >
+                 <ChevronLeft className="h-5 w-5" />
+               </button>
+               <div className="text-sm font-medium px-2">
+                 {T.page[lang]} {currentPage} {T.of[lang]} {totalPages}
+               </div>
+               <button 
+                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                 disabled={currentPage === totalPages}
+                 className="p-1 rounded-md border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 disabled:hover:bg-transparent"
+               >
+                 <ChevronRight className="h-5 w-5" />
+               </button>
+             </div>
+           </div>
+         )}
       </div>
     </div>
   );
