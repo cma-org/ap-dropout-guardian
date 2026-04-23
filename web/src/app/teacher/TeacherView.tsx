@@ -1,11 +1,24 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import type { School, RosterStudent } from "@/lib/types";
+import type { School, RosterStudent, RiskTier } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
 import { useLang, T } from "@/lib/i18n";
 import { fmtInt, pctFormat, cn } from "@/lib/utils";
-import { Search, Users, AlertCircle } from "lucide-react";
+import { Search, Users, AlertCircle, Download } from "lucide-react";
+
+function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
+  const header = "child_sno,gender,attendance_rate,fa_avg,risk_score,tier";
+  const rows = roster.map((r) =>
+    [r.child_sno, r.gender_label, r.attendance_rate.toFixed(3), r.fa_avg ?? "", r.risk_score.toFixed(4), r.tier].join(",")
+  );
+  const csv = [header, ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url;
+  a.download = `roster_${schoolName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
 
 export default function TeacherView({ schools }: { schools: School[] }) {
   const { lang } = useLang();
@@ -13,6 +26,8 @@ export default function TeacherView({ schools }: { schools: School[] }) {
   const [roster, setRoster] = useState<RosterStudent[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
+  const [tierFilter, setTierFilter] = useState<RiskTier | "All">("All");
 
   const selected = schools.find((s) => s.school_id === selectedId);
 
@@ -110,52 +125,104 @@ export default function TeacherView({ schools }: { schools: School[] }) {
               </div>
             </div>
 
+            {/* Student filter bar */}
+            {roster && roster.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="relative flex-1 min-w-[160px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                  <input
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    placeholder="Search by student ID…"
+                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/30"
+                  />
+                </div>
+                <div className="flex gap-1">
+                  {(["All", "Critical", "High", "Medium", "Low"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTierFilter(t)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-medium transition",
+                        tierFilter === t ? "bg-[color:var(--ap-navy)] text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                      )}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => exportRosterCSV(roster, selected?.school_name ?? "school")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-300 text-xs text-zinc-600 hover:bg-zinc-50 ml-auto"
+                >
+                  <Download className="h-3.5 w-3.5" /> Export CSV
+                </button>
+              </div>
+            )}
+
             <h2 className="text-sm font-semibold text-zinc-700 mb-3 uppercase tracking-wide">
               {T.teacherView.roster[lang]}
             </h2>
 
             {loading ? (
-              <div className="text-sm text-zinc-500 py-8 text-center">Loading…</div>
+              <div className="space-y-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-10 rounded-lg bg-zinc-100 animate-pulse" />
+                ))}
+              </div>
             ) : !roster || roster.length === 0 ? (
               <div className="text-sm text-zinc-500 py-8 text-center">{T.teacherView.noFlags[lang]}</div>
-            ) : (
-              <div className="overflow-auto max-h-[calc(100vh-360px)]">
-                <table className="min-w-full text-sm">
-                  <thead className="sticky top-0 bg-white shadow-[0_1px_0_#e5e7eb]">
-                    <tr className="text-left text-zinc-600">
-                      <th className="py-2 pr-4 font-medium">Child ID</th>
-                      <th className="py-2 px-3 font-medium">Gender</th>
-                      <th className="py-2 px-3 font-medium text-right">Attendance</th>
-                      <th className="py-2 px-3 font-medium text-right">FA Marks</th>
-                      <th className="py-2 px-3 font-medium text-right">Risk</th>
-                      <th className="py-2 pl-3 font-medium">Tier</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {roster.slice(0, 200).map((r) => (
-                      <tr key={r.child_sno} className="border-t border-zinc-100 hover:bg-zinc-50">
-                        <td className="py-2 pr-4">
-                          <Link href={`/student/${r.child_sno}`} className="text-[color:var(--ap-navy)] hover:underline font-medium">
-                            {r.child_sno}
-                          </Link>
-                        </td>
-                        <td className="py-2 px-3 text-zinc-700">{r.gender_label}</td>
-                        <td className="py-2 px-3 text-right tabular-nums">{pctFormat(r.attendance_rate, 0)}</td>
-                        <td className="py-2 px-3 text-right tabular-nums text-zinc-700">
-                          {r.fa_avg === null ? "—" : r.fa_avg.toFixed(0)}
-                        </td>
-                        <td className="py-2 px-3 text-right tabular-nums font-medium">
-                          {pctFormat(r.risk_score, 0)}
-                        </td>
-                        <td className="py-2 pl-3">
-                          <RiskBadge tier={r.tier} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            ) : (() => {
+              const filtered = roster.filter((r) => {
+                if (tierFilter !== "All" && r.tier !== tierFilter) return false;
+                if (studentSearch && !String(r.child_sno).includes(studentSearch)) return false;
+                return true;
+              });
+              return (
+                <>
+                  <div className="overflow-auto max-h-[calc(100vh-400px)]">
+                    <table className="min-w-full text-sm">
+                      <thead className="sticky top-0 bg-white shadow-[0_1px_0_#e5e7eb]">
+                        <tr className="text-left text-zinc-600">
+                          <th className="py-2 pr-4 font-medium">Child ID</th>
+                          <th className="py-2 px-3 font-medium">Gender</th>
+                          <th className="py-2 px-3 font-medium text-right">Attendance</th>
+                          <th className="py-2 px-3 font-medium text-right">FA Marks</th>
+                          <th className="py-2 px-3 font-medium text-right">Risk</th>
+                          <th className="py-2 pl-3 font-medium">Tier</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.slice(0, 200).map((r) => (
+                          <tr key={r.child_sno} className="border-t border-zinc-100 hover:bg-zinc-50">
+                            <td className="py-2 pr-4">
+                              <Link href={`/student/${r.child_sno}`} className="text-[color:var(--ap-navy)] hover:underline font-medium">
+                                {r.child_sno}
+                              </Link>
+                            </td>
+                            <td className="py-2 px-3 text-zinc-700">{r.gender_label}</td>
+                            <td className="py-2 px-3 text-right tabular-nums">{pctFormat(r.attendance_rate, 0)}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-zinc-700">
+                              {r.fa_avg === null ? "—" : r.fa_avg.toFixed(0)}
+                            </td>
+                            <td className="py-2 px-3 text-right tabular-nums font-medium">
+                              {pctFormat(r.risk_score, 0)}
+                            </td>
+                            <td className="py-2 pl-3">
+                              <RiskBadge tier={r.tier} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="text-xs text-zinc-400 mt-2">
+                    Showing {Math.min(filtered.length, 200)} of {filtered.length} students
+                    {tierFilter !== "All" || studentSearch ? ` (filtered from ${roster.length})` : ""}
+                  </div>
+                </>
+              );
+            })()}
           </>
         ) : (
           <div className="text-sm text-zinc-500 py-8 text-center">

@@ -11,8 +11,21 @@ import {
 } from "recharts";
 import {
   Bell, AlertTriangle, Globe, Activity, Shield, CheckCircle2,
-  ChevronRight, ArrowUpRight, RefreshCw, Wifi, Database, Zap,
+  ChevronRight, ArrowUpRight, RefreshCw, Wifi, Database, Zap, Download,
 } from "lucide-react";
+
+function exportStateCSV(schools: School[]) {
+  const header = "district,school_name,mandal,n_students,n_flagged,avg_risk,pct_critical";
+  const rows = schools.map((s) =>
+    [s.district_name, `"${s.school_name ?? ""}"`, `"${s.mandal_name ?? ""}"`, s.n_students, s.n_flagged, s.avg_risk.toFixed(4), s.pct_critical.toFixed(2)].join(",")
+  );
+  const csv = [header, ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url;
+  a.download = `ap_all_schools_risk_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
 
 const MONTHS = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 
@@ -106,6 +119,12 @@ export default function RTGSDashboard({
           <div className="text-xs text-zinc-500 bg-zinc-100 rounded-lg px-3 py-2">
             <span className="font-semibold text-zinc-700">{user?.name}</span> · RTGS Admin
           </div>
+          <button
+            onClick={() => exportStateCSV(schools)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-300 text-xs text-zinc-600 hover:bg-zinc-50"
+          >
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </button>
           <button
             onClick={handleRefresh}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-300 text-xs text-zinc-600 hover:bg-zinc-50"
