@@ -1,11 +1,83 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, MessageCircle, MessagesSquare, Shield, Sparkles, GraduationCap } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MessageCircle, MessagesSquare, Shield, Sparkles, GraduationCap, ClipboardList } from "lucide-react";
 import type { StudentDetail, CounsellorTemplate } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
+import InterventionModal, { getInterventionsForStudent, isInterventionLogged } from "@/components/InterventionModal";
+import ParentEngagementCard from "@/components/ParentEngagementCard";
+import LEAPApiPanel from "@/components/LEAPApiPanel";
 import { useLang, T } from "@/lib/i18n";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
+
+type Scheme = { name: string; benefit: string };
+
+function getPersonalisedSchemes(student: StudentDetail, base: Scheme[]): Scheme[] {
+  const seen = new Set(base.map((s) => s.name));
+  const add = (s: Scheme) => { if (!seen.has(s.name)) { seen.add(s.name); out.push(s); } };
+  const out: Scheme[] = [...base];
+  const isFemale = student.gender === 2;
+  const caste = student.caste_clean as 1 | 2 | 3 | 4;
+  const isSCST = caste === 3 || caste === 4;
+  const isBC = caste === 2;
+
+  // Amma Vodi — all students with school-going children
+  add({ name: "Amma Vodi", benefit: "₹15,000/year to mother — keep child enrolled in government school" });
+
+  // Gender-specific
+  if (isFemale) {
+    add({ name: "Kasturba Gandhi Balika Vidyalaya (KGBV)", benefit: "Free residential schooling for girls from vulnerable/migrant families" });
+    add({ name: "Aadabidda Nidhi", benefit: "₹1,500 financial assistance for economically vulnerable girls (TDP 2024)" });
+    add({ name: "AP Girls Hostel (Social Welfare)", benefit: "Free hostel for SC/ST/BC girls in district headquarters" });
+  }
+
+  // SC / ST specific
+  if (isSCST) {
+    add({ name: "Post-Matric Scholarship RTF", benefit: "100% tuition & exam fee reimbursement for SC/ST students (Jnanabhumi)" });
+    add({ name: "Post-Matric Scholarship MTF", benefit: "Maintenance allowance: ₹550–₹1,200/month for SC/ST hostel/day scholars" });
+    add({ name: "NTR Vidyonnathi", benefit: "₹10,000 + 9-month civil services coaching for SC/ST/BC/EBC/Minority" });
+    add({ name: "Ambedkar Overseas Vidya Nidhi", benefit: "Financial aid for SC/ST students pursuing higher education abroad" });
+    if (isFemale) {
+      add({ name: "Rajiv Gandhi National Fellowship (SC/ST Girls)", benefit: "Monthly fellowship for M.Phil/PhD pursuits" });
+    }
+  }
+
+  // BC / EBC specific
+  if (isBC) {
+    add({ name: "Post-Matric Scholarship RTF (BC)", benefit: "Fee reimbursement for BC/EBC/Minority students (Jnanabhumi portal)" });
+    add({ name: "Post-Matric Scholarship MTF (BC)", benefit: "Maintenance allowance for BC hostel/day scholars" });
+    add({ name: "NTR Vidyonnathi", benefit: "₹10,000 + coaching for BC/EBC/Minority students in competitive exams" });
+    add({ name: "BC Welfare Residential Schools", benefit: "Free residential schooling for BC students in Classes 5–10" });
+  }
+
+  // Migration
+  if (student.migration_flag) {
+    add({ name: "Samagra Shiksha Bridge Course", benefit: "Catch-up curriculum for children returning after seasonal migration" });
+  }
+
+  // Transport
+  if (student.transport_allowance) {
+    add({ name: "AP Samagra Shiksha Transport Allowance", benefit: "₹2,400/year for students travelling >1 km to school" });
+  }
+
+  return out;
+}
+
+function SchemeTag({ gender, caste }: { gender: number; caste: number }) {
+  const tags: string[] = [];
+  if (gender === 2) tags.push("Female");
+  const c = { 1: "OC", 2: "BC", 3: "SC", 4: "ST" } as Record<number, string>;
+  if (c[caste]) tags.push(c[caste]);
+  if (!tags.length) return null;
+  return (
+    <div className="flex gap-1.5 mb-2">
+      {tags.map(t => (
+        <span key={t} className="text-[10px] uppercase tracking-wide bg-zinc-100 border border-zinc-200 text-zinc-600 rounded px-2 py-0.5 font-medium">{t}</span>
+      ))}
+      <span className="text-[10px] text-zinc-400 self-center">— schemes personalised</span>
+    </div>
+  );
+}
 
 function RiskGauge({ score }: { score: number }) {
   const pct = Math.round(score * 100);
@@ -65,25 +137,15 @@ export default function StudentDetailClient({
 }) {
   const { lang } = useLang();
   const [logged, setLogged] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [interventionCount, setInterventionCount] = useState(0);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("interventions");
-      if (!raw) return;
-      const list = JSON.parse(raw) as { child_sno: number }[];
-      if (list.some((x) => x.child_sno === student.child_sno)) setLogged(true);
-    } catch { /* ignore */ }
-  }, [student.child_sno]);
-
-  const logIntervention = () => {
-    try {
-      const raw = localStorage.getItem("interventions");
-      const list = raw ? (JSON.parse(raw) as { child_sno: number; at: string }[]) : [];
-      list.push({ child_sno: student.child_sno, at: new Date().toISOString() });
-      localStorage.setItem("interventions", JSON.stringify(list));
-      setLogged(true);
-    } catch { /* ignore */ }
+  const refreshState = () => {
+    setLogged(isInterventionLogged(student.child_sno));
+    setInterventionCount(getInterventionsForStudent(student.child_sno).length);
   };
+
+  useEffect(() => { refreshState(); }, [student.child_sno]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sms = lang === "en" ? counsellorTemplate.parent_sms_en : counsellorTemplate.parent_sms_te;
   const script = lang === "en" ? counsellorTemplate.teacher_script_en : counsellorTemplate.teacher_script_te;
@@ -232,8 +294,9 @@ export default function StudentDetailClient({
 
         <div className="mt-4 rounded-lg bg-white p-4 border">
           <h3 className="text-xs font-semibold text-zinc-700 uppercase tracking-wide mb-2">{T.student.schemes[lang]}</h3>
+          <SchemeTag gender={student.gender} caste={student.caste_clean} />
           <ul className="space-y-1.5">
-            {counsellorTemplate.schemes.map((s, i) => (
+            {getPersonalisedSchemes(student, counsellorTemplate.schemes).map((s, i) => (
               <li key={i} className="flex items-start gap-2 text-sm">
                 <span className="text-[color:var(--ap-green)] mt-0.5">•</span>
                 <div><span className="font-medium text-zinc-900">{s.name}</span> <span className="text-zinc-600">— {s.benefit}</span></div>
@@ -242,31 +305,48 @@ export default function StudentDetailClient({
           </ul>
         </div>
 
-        <div className="mt-5 flex justify-end">
+        <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
+          {interventionCount > 0 && (
+            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {interventionCount} intervention{interventionCount > 1 ? "s" : ""} logged
+            </span>
+          )}
           <button
-            onClick={logIntervention}
-            disabled={logged}
+            onClick={() => setShowModal(true)}
             className={cn(
-              "inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+              "ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
               logged
-                ? "bg-emerald-600 text-white cursor-default"
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
                 : "bg-[color:var(--ap-navy)] text-white hover:bg-[color:var(--ap-navy)]/90"
             )}
           >
-            {logged ? (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                {T.student.loggedIntervention[lang]}
-              </>
-            ) : (
-              T.student.logIntervention[lang]
-            )}
+            <ClipboardList className="h-4 w-4" />
+            {logged ? T.student.loggedIntervention[lang] : T.student.logIntervention[lang]}
           </button>
         </div>
         <p className="text-[11px] text-zinc-500 text-right mt-1">
           {lang === "en" ? "Feeds the closed-loop retrain pipeline → outcome tracking → monthly model refresh." : "క్లోజ్డ్-లూప్ రీ-ట్రైన్ పైప్‌లైన్‌కు → ఫలితాల ట్రాకింగ్ → నెలవారీ మోడల్ రిఫ్రెష్."}
         </p>
       </section>
+
+      {/* Parent & community engagement */}
+      <ParentEngagementCard
+        child_sno={student.child_sno}
+        school_name={student.school_name}
+        smsText={smsRendered}
+      />
+
+      {/* LEAP API integration */}
+      <LEAPApiPanel student={student} />
+
+      {showModal && (
+        <InterventionModal
+          child_sno={student.child_sno}
+          onClose={() => setShowModal(false)}
+          onSaved={refreshState}
+        />
+      )}
     </div>
   );
 }
