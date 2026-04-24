@@ -1,5 +1,6 @@
-import { promises as fs } from "fs";
-import path from "path";
+import "server-only"; // prevents Turbopack from statically tracing public/data/** into the client bundle
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import type {
   Metrics, Mandal, School, StudentDetail, RosterStudent, CounsellorTemplates,
 } from "./types";
