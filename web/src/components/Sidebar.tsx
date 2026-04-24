@@ -39,6 +39,7 @@ export default function Sidebar() {
       // District Heatmap - ONLY for district officer and above (rtgs)
       if (user.role === "district" || user.role === "rtgs") {
         nav.push({ href: "/dashboard/district/schools", label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
+        nav.push({ href: "/dashboard/district/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
         nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
 
