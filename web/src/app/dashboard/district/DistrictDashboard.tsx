@@ -242,7 +242,7 @@ export default function DistrictDashboard({
                     {s.pct_critical.toFixed(1)}%
                   </td>
                   <td className="px-4 py-2.5">
-                    <Link href="/teacher" className="text-[color:var(--ap-navy)] hover:underline text-xs flex items-center gap-1">
+                    <Link href={`/dashboard/district/schools?id=${s.school_id}`} className="text-[color:var(--ap-navy)] hover:underline text-xs flex items-center gap-1">
                       View <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   </td>

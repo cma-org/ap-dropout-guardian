@@ -30,6 +30,7 @@ export interface RosterStudent {
   fa_avg: number | null;
   risk_score: number;
   tier: RiskTier;
+  grade?: number;
 }
 
 export interface Driver {

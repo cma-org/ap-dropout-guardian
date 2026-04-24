@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { CheckCircle2, X, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLang, T } from "@/lib/i18n";
 
 export type InterventionStatus = "pending" | "in_progress" | "completed";
 
@@ -65,6 +66,7 @@ export default function InterventionModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { lang } = useLang();
   const existing = getInterventionsForStudent(child_sno);
 
   const [actionType, setActionType] = useState(ACTION_TYPES[0]);
@@ -110,7 +112,7 @@ export default function InterventionModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
           <h2 className="font-semibold text-zinc-900 flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-[color:var(--ap-navy)]" />
-            Log Intervention — Student #{child_sno}
+            {T.interventions.logTitle[lang].replace("{id}", child_sno.toString())}
           </h2>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
             <X className="h-5 w-5" />
@@ -120,21 +122,23 @@ export default function InterventionModal({
         {/* Existing interventions */}
         {existing.length > 0 && (
           <div className="px-6 py-4 border-b border-zinc-100 space-y-2">
-            <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Previous interventions</div>
+            <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">{T.interventions.prevIv[lang]}</div>
             {existing.map((iv, i) => (
               <div key={i} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-zinc-800">{iv.action_type}</div>
+                  <div className="text-sm font-medium text-zinc-800">
+                    {(T.interventions.types as any)[iv.action_type]?.[lang] || iv.action_type}
+                  </div>
                   {iv.notes && <div className="text-xs text-zinc-500 mt-0.5 truncate">{iv.notes}</div>}
-                  <div className="text-[10px] text-zinc-400 mt-1">{new Date(iv.at).toLocaleString()}</div>
+                  <div className="text-[10px] text-zinc-400 mt-1">{new Date(iv.at).toLocaleString(lang === "en" ? "en-US" : "te-IN")}</div>
                 </div>
                 <select
                   defaultValue={iv.status}
                   onChange={(e) => updateStatus(i, e.target.value as InterventionStatus)}
                   className={cn("text-xs rounded border px-2 py-1 font-medium shrink-0", STATUS_COLORS[iv.status])}
                 >
-                  {Object.entries(STATUS_LABELS).map(([v, l]) => (
-                    <option key={v} value={v}>{l}</option>
+                  {Object.entries(T.interventions.statuses).map(([v, l]) => (
+                    <option key={v} value={v}>{(l as any)[lang]}</option>
                   ))}
                 </select>
               </div>
@@ -144,49 +148,53 @@ export default function InterventionModal({
 
         {/* New intervention form */}
         <div className="px-6 py-4 space-y-4">
-          <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">New intervention</div>
+          <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">{T.interventions.newIv[lang]}</div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Action type</label>
+            <label className="text-sm font-medium text-zinc-700">{T.interventions.actionType[lang]}</label>
             <select
               value={actionType}
               onChange={(e) => setActionType(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]"
             >
-              {ACTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {ACTION_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {(T.interventions.types as any)[t]?.[lang] || t}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Status</label>
+              <label className="text-sm font-medium text-zinc-700">{T.interventions.status[lang]}</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as InterventionStatus)}
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]"
               >
-                {Object.entries(STATUS_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
+                {Object.entries(T.interventions.statuses).map(([v, l]) => (
+                  <option key={v} value={v}>{(l as any)[lang]}</option>
                 ))}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Assigned to</label>
+              <label className="text-sm font-medium text-zinc-700">{T.interventions.assignedTo[lang]}</label>
               <input
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                placeholder="Teacher / counsellor name"
+                placeholder={T.interventions.placeholderAssign[lang]}
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Notes</label>
+            <label className="text-sm font-medium text-zinc-700">{T.interventions.notes[lang]}</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="What was discussed, next steps, parent response…"
+              placeholder={T.interventions.placeholderNotes[lang]}
               rows={3}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)] resize-none"
             />
@@ -203,18 +211,18 @@ export default function InterventionModal({
                   : "bg-[color:var(--ap-navy)] text-white hover:opacity-90"
               )}
             >
-              {saved ? <><CheckCircle2 className="h-4 w-4" /> Saved!</> : "Save intervention"}
+              {saved ? <><CheckCircle2 className="h-4 w-4" /> {T.common.saved[lang]}</> : T.interventions.saveIv[lang]}
             </button>
             <button
               onClick={onClose}
               className="px-4 rounded-lg border border-zinc-300 text-sm text-zinc-600 hover:bg-zinc-50"
             >
-              Cancel
+              {T.common.cancel[lang]}
             </button>
           </div>
 
           <p className="text-[11px] text-zinc-400 text-center">
-            Feeds closed-loop retraining pipeline → monthly model refresh
+            {T.interventions.feedbackNote[lang]}
           </p>
         </div>
       </div>

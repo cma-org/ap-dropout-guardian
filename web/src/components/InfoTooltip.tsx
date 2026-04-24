@@ -2,7 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Info } from "lucide-react";
 
-export default function InfoTooltip({ text }: { text: string }) {
+export default function InfoTooltip({ text }: { text?: string }) {
+  if (!text) return null;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

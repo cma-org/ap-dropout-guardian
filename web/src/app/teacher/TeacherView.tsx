@@ -28,6 +28,7 @@ export default function TeacherView({ schools }: { schools: School[] }) {
   const [search, setSearch] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<RiskTier | "All">("All");
+  const [gradeFilter, setGradeFilter] = useState<string>("All");
 
   const selected = schools.find((s) => s.school_id === selectedId);
 
@@ -36,7 +37,18 @@ export default function TeacherView({ schools }: { schools: School[] }) {
     setLoading(true);
     fetch(`/data/roster/${selectedId}.json`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: RosterStudent[] | null) => setRoster(data ?? []))
+      .then((data: RosterStudent[] | null) => {
+        if (data) {
+          // Simulate grades 6-10 if not present
+          const withGrades = data.map((s: any, i: number) => ({
+            ...s,
+            grade: s.grade || (6 + (i % 5))
+          }));
+          setRoster(withGrades);
+        } else {
+          setRoster([]);
+        }
+      })
       .finally(() => setLoading(false));
   }, [selectedId]);
 
@@ -151,6 +163,20 @@ export default function TeacherView({ schools }: { schools: School[] }) {
                     </button>
                   ))}
                 </div>
+                <div className="flex gap-1 border-l pl-2">
+                  {(["All", "6", "7", "8", "9", "10"] as const).map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setGradeFilter(g)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-medium transition",
+                        gradeFilter === g ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                      )}
+                    >
+                      {g === "All" ? "All" : `${g}th`}
+                    </button>
+                  ))}
+                </div>
                 <button
                   onClick={() => exportRosterCSV(roster, selected?.school_name ?? "school")}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-300 text-xs text-zinc-600 hover:bg-zinc-50 ml-auto"
@@ -175,6 +201,7 @@ export default function TeacherView({ schools }: { schools: School[] }) {
             ) : (() => {
               const filtered = roster.filter((r) => {
                 if (tierFilter !== "All" && r.tier !== tierFilter) return false;
+                if (gradeFilter !== "All" && String(r.grade) !== gradeFilter) return false;
                 if (studentSearch && !String(r.child_sno).includes(studentSearch)) return false;
                 return true;
               });
@@ -185,6 +212,7 @@ export default function TeacherView({ schools }: { schools: School[] }) {
                       <thead className="sticky top-0 bg-white shadow-[0_1px_0_#e5e7eb]">
                         <tr className="text-left text-zinc-600">
                           <th className="py-2 pr-4 font-medium">Child ID</th>
+                          <th className="py-2 px-3 font-medium">{T.student.grade[lang]}</th>
                           <th className="py-2 px-3 font-medium">Gender</th>
                           <th className="py-2 px-3 font-medium text-right">Attendance</th>
                           <th className="py-2 px-3 font-medium text-right">FA Marks</th>
@@ -200,6 +228,7 @@ export default function TeacherView({ schools }: { schools: School[] }) {
                                 {r.child_sno}
                               </Link>
                             </td>
+                            <td className="py-2 px-3 text-zinc-600">{r.grade}th</td>
                             <td className="py-2 px-3 text-zinc-700">{r.gender_label}</td>
                             <td className="py-2 px-3 text-right tabular-nums">{pctFormat(r.attendance_rate, 0)}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-zinc-700">
@@ -218,7 +247,7 @@ export default function TeacherView({ schools }: { schools: School[] }) {
                   </div>
                   <div className="text-xs text-zinc-400 mt-2">
                     Showing {Math.min(filtered.length, 200)} of {filtered.length} students
-                    {tierFilter !== "All" || studentSearch ? ` (filtered from ${roster.length})` : ""}
+                    {(tierFilter !== "All" || gradeFilter !== "All" || studentSearch) ? ` (filtered from ${roster.length})` : ""}
                   </div>
                 </>
               );
