@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Phone, MessageCircle, UserCheck, MapPin, CreditCard, CheckCircle2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLang } from "@/lib/i18n";
+import { useLang, T } from "@/lib/i18n";
 
 const VOLUNTEERS = [
   "Smt. Padmavathi (Ward Volunteer)",
@@ -60,10 +60,10 @@ export default function ParentEngagementCard({
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-zinc-900 flex items-center gap-2">
           <UserCheck className="h-5 w-5 text-emerald-600" />
-          {lang === "en" ? "Community & Parent Engagement" : "సమాజ & తల్లిదండ్రుల నిమగ్నత"}
+          {T.community.title[lang]}
         </h2>
         <span className="text-[10px] uppercase tracking-wide bg-white border border-emerald-200 text-emerald-700 rounded px-2 py-0.5 font-medium">
-          {lang === "en" ? "Action required" : "చర్య అవసరం"}
+          {T.community.actionRequired[lang]}
         </span>
       </div>
 
@@ -72,7 +72,7 @@ export default function ParentEngagementCard({
         <div className="rounded-lg bg-white border p-3">
           <div className="text-xs text-zinc-500 flex items-center gap-1 mb-1">
             <Phone className="h-3 w-3" />
-            {lang === "en" ? "Parent / Guardian" : "తల్లిదండ్రి"}
+            {T.community.parent[lang]}
           </div>
           <div className="text-sm font-medium text-zinc-800">{parentName}</div>
           <div className="text-xs text-zinc-600 font-mono mt-0.5">{phone}</div>
@@ -80,25 +80,25 @@ export default function ParentEngagementCard({
         <div className="rounded-lg bg-white border p-3">
           <div className="text-xs text-zinc-500 flex items-center gap-1 mb-1">
             <MapPin className="h-3 w-3" />
-            {lang === "en" ? "Distance to school" : "పాఠశాలకు దూరం"}
+            {T.community.distance[lang]}
           </div>
           <div className="text-sm font-medium text-zinc-800">{distanceKm.toFixed(1)} km</div>
-          <div className="text-xs text-zinc-500">{distanceKm > 5 ? (lang === "en" ? "Transport needed" : "రవాణా అవసరం") : (lang === "en" ? "Walkable" : "నడవగలిగే దూరం")}</div>
+          <div className="text-xs text-zinc-500">{distanceKm > 5 ? T.community.transportNeeded[lang] : T.community.walkable[lang]}</div>
         </div>
         <div className="rounded-lg bg-white border p-3">
           <div className="text-xs text-zinc-500 flex items-center gap-1 mb-1">
             <CreditCard className="h-3 w-3" />
-            {lang === "en" ? "Ration card" : "రేషన్ కార్డు"}
+            {T.community.rationCard[lang]}
           </div>
           <div className={cn("text-sm font-medium", rationCard ? "text-emerald-700" : "text-red-700")}>
-            {rationCard ? (lang === "en" ? "Active" : "చురుకుగా ఉంది") : (lang === "en" ? "Not registered" : "నమోదు కాలేదు")}
+            {rationCard ? T.community.active[lang] : T.community.notRegistered[lang]}
           </div>
           <div className="text-xs text-zinc-500">{lang === "en" ? "Civil Supplies DB" : "సివిల్ సరఫరాల DB"}</div>
         </div>
         <div className="rounded-lg bg-white border p-3">
           <div className="text-xs text-zinc-500 flex items-center gap-1 mb-1">
             <UserCheck className="h-3 w-3" />
-            {lang === "en" ? "Assigned volunteer" : "కేటాయించిన వాలంటీర్"}
+            {T.community.volunteer[lang]}
           </div>
           <div className="text-xs font-medium text-zinc-800 leading-tight">{volunteer}</div>
         </div>
@@ -107,7 +107,7 @@ export default function ParentEngagementCard({
       {/* Action buttons */}
       <div className="rounded-lg bg-white border p-4 space-y-3">
         <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">
-          {lang === "en" ? "Outreach actions" : "సంప్రదింపు చర్యలు"}
+          {T.community.outreach[lang]}
         </div>
         <div className="flex flex-wrap gap-3">
           <button
@@ -118,16 +118,14 @@ export default function ParentEngagementCard({
             )}
           >
             <MessageCircle className="h-4 w-4" />
-            {whatsappSent
-              ? (lang === "en" ? "WhatsApp opened ✓" : "WhatsApp తెరిచారు ✓")
-              : (lang === "en" ? "Send via WhatsApp" : "WhatsApp ద్వారా పంపండి")}
+            {whatsappSent ? T.community.whatsappSent[lang] : T.community.whatsapp[lang]}
           </button>
           <a
             href={`tel:${phone}`}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-zinc-300 text-zinc-700 hover:bg-zinc-50 transition"
           >
             <Phone className="h-4 w-4" />
-            {lang === "en" ? "Call parent" : "తల్లిదండ్రులకు కాల్ చేయండి"}
+            {T.community.call[lang]}
           </a>
           <button
             onClick={handleMarkContacted}
@@ -138,25 +136,19 @@ export default function ParentEngagementCard({
             )}
           >
             {contacted ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Send className="h-4 w-4" />}
-            {contacted
-              ? (lang === "en" ? "Contact logged" : "సంప్రదింపు నమోదైంది")
-              : (lang === "en" ? "Mark as contacted" : "సంప్రదించినట్లు గుర్తించు")}
+            {contacted ? T.community.contacted[lang] : T.community.markContacted[lang]}
           </button>
         </div>
         <p className="text-[11px] text-zinc-400">
-          {lang === "en"
-            ? "Contact log feeds the closed-loop outcome tracker → model retrain pipeline."
-            : "సంప్రదింపు లాగ్ క్లోజ్డ్-లూప్ ఫలితాల ట్రాకర్‌కు → మోడల్ రీట్రైన్ పైప్‌లైన్‌కు."}
+          {T.community.contactLog[lang]}
         </p>
       </div>
 
       {/* Scheme eligibility quick-check */}
       {!rationCard && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <span className="font-semibold">Action: </span>
-          {lang === "en"
-            ? "Student's family has no ration card — refer to MeeSeva centre for enrollment in Post-Matric Scholarship RTF/MTF (fee + maintenance) and Amma Vodi scheme."
-            : "విద్యార్థి కుటుంబానికి రేషన్ కార్డు లేదు — జగనన్న విద్యా దీవెన / వసతి దీవెన పథకం కోసం మీసేవ కేంద్రానికి రిఫర్ చేయండి."}
+          <span className="font-semibold">{lang === "en" ? "Action: " : "చర్య: "}</span>
+          {T.community.rationAlert[lang]}
         </div>
       )}
     </section>
