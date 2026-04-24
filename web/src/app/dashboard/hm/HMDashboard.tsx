@@ -3,12 +3,10 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { useLang, T } from "@/lib/i18n";
 import type { RosterStudent, School } from "@/lib/types";
 import { TIER_COLORS } from "@/lib/types";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
 import RiskBadge from "@/components/RiskBadge";
-import StudentAnalyticsPanel from "@/components/StudentAnalyticsPanel";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend,
@@ -47,7 +45,6 @@ function gradeBreakdown(roster: RosterStudent[]) {
 
 export default function HMDashboard({ roster, school }: { roster: RosterStudent[]; school: School | null }) {
   const { user } = useAuth();
-  const { lang } = useLang();
   const router = useRouter();
 
   useEffect(() => {
@@ -68,14 +65,14 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900 flex items-center gap-2">
             <SchoolIcon className="h-6 w-6 text-[color:var(--ap-navy)]" />
-            {T.dashboard.hm[lang]}
+            Head Master Dashboard
           </h1>
           <p className="text-sm text-zinc-500 mt-0.5">
             {school?.school_name ?? "My School"} · {school?.district_name} · AY 2024-25
           </p>
         </div>
         <div className="text-xs text-zinc-500 bg-zinc-100 rounded-lg px-3 py-2">
-          {T.dashboard.logIn[lang]} <span className="font-semibold text-zinc-700">{user?.name}</span> · {lang === "en" ? "Head Master" : "ప్రధానోపాధ్యాయుడు"}
+          Logged in as <span className="font-semibold text-zinc-700">{user?.name}</span> · Head Master
         </div>
       </div>
 
@@ -85,10 +82,10 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
           <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
           <div>
             <div className="font-semibold text-red-900">
-              {lang === "en" ? `ALERT: ${critical.length} students escalated to Critical — ${high.length} High-risk require teacher follow-up` : `హెచ్చరిక: ${critical.length} విద్యార్థులు అత్యవసర స్థాయికి చేరారు — ${high.length} అధిక ప్రమాద విద్యార్థులకు ఉపాధ్యాయ అనుసరణ అవసరం`}
+              ALERT: {critical.length} students escalated to Critical — {high.length} High-risk require teacher follow-up
             </div>
             <div className="text-sm text-red-700 mt-0.5">
-              {lang === "en" ? "Ensure class teachers have reviewed and logged interventions within 48 hours. This is tracked at district level." : "తరగతి ఉపాధ్యాయులు 48 గంటల్లో జోక్యాలు సమీక్షించి నమోదు చేశారని నిర్ధారించుకోండి. ఇది జిల్లా స్థాయిలో ట్రాక్ చేయబడుతుంది."}
+              Ensure class teachers have reviewed and logged interventions within 48 hours. This is tracked at district level.
             </div>
           </div>
         </div>
@@ -97,10 +94,10 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: lang === "en" ? "Total enrolled" : "మొత్తం నమోదు", value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: lang === "en" ? "All classes" : "అన్ని తరగతులు" },
-          { label: T.dashboard.flaggedRisk[lang], value: fmtInt(flagged.length), icon: <TrendingDown className="h-5 w-5 text-amber-500" />, sub: pctFormat(flagged.length / Math.max(roster.length, 1), 0) + (lang === "en" ? " of school" : " పాఠశాల"), tone: "warn" },
-          { label: T.dashboard.criticalTier[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, tone: "bad", sub: T.dashboard.needsAction[lang] },
-          { label: T.dashboard.avgAttendance[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, tone: avgAtt >= 0.75 ? "good" : "warn", sub: lang === "en" ? "School average" : "పాఠశాల సగటు" },
+          { label: "Total enrolled", value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: "All classes" },
+          { label: "At-risk flagged", value: fmtInt(flagged.length), icon: <TrendingDown className="h-5 w-5 text-amber-500" />, sub: pctFormat(flagged.length / Math.max(roster.length, 1), 0) + " of school" },
+          { label: "Critical", value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, tone: "bad", sub: "Immediate action" },
+          { label: "Avg attendance", value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, tone: avgAtt >= 0.75 ? "good" : "warn", sub: "School average" },
         ].map((s) => (
           <div key={s.label} className={cn("rounded-xl border bg-white px-4 py-3", s.tone === "bad" ? "border-red-200 bg-red-50/30" : s.tone === "warn" ? "border-amber-200 bg-amber-50/30" : "")}>
             <div className="flex items-center justify-between mb-2">
@@ -116,7 +113,7 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Grade-wise breakdown */}
         <div className="rounded-xl border bg-white p-5">
-          <h2 className="font-semibold text-zinc-800 mb-4">{lang === "en" ? "Grade-wise risk breakdown" : "తరగతి వారీగా ప్రమాద విభజన"}</h2>
+          <h2 className="font-semibold text-zinc-800 mb-4">Grade-wise risk breakdown</h2>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={breakdown} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -124,9 +121,9 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="total" fill="#e5e7eb" name={lang === "en" ? "Total" : "మొత్తం"} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="flagged" fill="#f97316" name={T.analytics.atRisk[lang]} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="critical" fill="#dc2626" name={lang === "en" ? "Critical" : "అత్యవసరం"} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total" fill="#e5e7eb" name="Total" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="flagged" fill="#f97316" name="Flagged" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="critical" fill="#dc2626" name="Critical" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -134,8 +131,8 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
         {/* Monthly trend */}
         <div className="rounded-xl border bg-white p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-zinc-800">{lang === "en" ? "Flagged students over time" : "కాలక్రమేణా గుర్తించిన విద్యార్థులు"}</h2>
-            <span className="text-xs text-zinc-400 italic">{T.dashboard.simulated[lang]}</span>
+            <h2 className="font-semibold text-zinc-800">Flagged students over time</h2>
+            <span className="text-xs text-zinc-400 italic">Simulated</span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={trend} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -144,32 +141,29 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="flagged" stroke="#dc2626" strokeWidth={2} dot={false} name={T.dashboard.flaggedStudents[lang]} />
-              <Line type="monotone" dataKey="interventions" stroke="#16a34a" strokeWidth={2} dot={false} name={lang === "en" ? "Interventions logged" : "జోక్యాలు నమోదు"} />
+              <Line type="monotone" dataKey="flagged" stroke="#dc2626" strokeWidth={2} dot={false} name="Flagged" />
+              <Line type="monotone" dataKey="interventions" stroke="#16a34a" strokeWidth={2} dot={false} name="Interventions logged" />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Multi-metric analytics */}
-      <StudentAnalyticsPanel roster={roster} />
-
       {/* Top-risk students table */}
       <div className="rounded-xl border bg-white">
         <div className="px-5 py-4 border-b border-zinc-200">
-          <h2 className="font-semibold text-zinc-800">{lang === "en" ? "Top at-risk students across school" : "పాఠశాలలో అత్యధిక ప్రమాద విద్యార్థులు"}</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">{lang === "en" ? "Click any student to view SHAP explanation + counsellor guide" : "SHAP వివరణ + సలహాదారు మార్గదర్శి చూడడానికి విద్యార్థిపై క్లిక్ చేయండి"}</p>
+          <h2 className="font-semibold text-zinc-800">Top at-risk students across school</h2>
+          <p className="text-xs text-zinc-500 mt-0.5">Click any student to view SHAP explanation + counsellor guide</p>
         </div>
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-zinc-500 border-b border-zinc-200">
-                <th className="px-5 py-2 font-medium">{lang === "en" ? "Student ID" : "విద్యార్థి ID"}</th>
-                <th className="px-4 py-2 font-medium">{lang === "en" ? "Risk tier" : "ప్రమాద స్థాయి"}</th>
-                <th className="px-4 py-2 font-medium">{T.student.gender[lang]}</th>
-                <th className="px-4 py-2 font-medium text-right">{T.student.attendance[lang]}</th>
-                <th className="px-4 py-2 font-medium text-right">{T.student.marks[lang]}</th>
-                <th className="px-4 py-2 font-medium text-right">{lang === "en" ? "Risk score" : "ప్రమాద స్కోర్"}</th>
+                <th className="px-5 py-2 font-medium">Student ID</th>
+                <th className="px-4 py-2 font-medium">Risk tier</th>
+                <th className="px-4 py-2 font-medium">Gender</th>
+                <th className="px-4 py-2 font-medium text-right">Attendance</th>
+                <th className="px-4 py-2 font-medium text-right">Marks (FA)</th>
+                <th className="px-4 py-2 font-medium text-right">Risk score</th>
                 <th className="px-4 py-2 font-medium"></th>
               </tr>
             </thead>
@@ -200,13 +194,13 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
       <div className="rounded-xl border bg-white p-5">
         <h2 className="font-semibold text-zinc-800 mb-3 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          {lang === "en" ? "Intervention activity this term" : "ఈ టర్మ్ జోక్యం కార్యకలాపం"}
+          Intervention activity this term
         </h2>
         <div className="grid grid-cols-3 gap-4 text-center">
           {[
-            { label: lang === "en" ? "Interventions logged" : "జోక్యాలు నమోదు", value: "24", sub: lang === "en" ? "By class teachers" : "తరగతి ఉపాధ్యాయులచే" },
-            { label: lang === "en" ? "Pending review" : "సమీక్ష పెండింగ్", value: fmtInt(critical.length + high.length), sub: lang === "en" ? "No intervention yet" : "ఇంకా జోక్యం లేదు" },
-            { label: lang === "en" ? "Coverage rate" : "కవరేజ్ రేటు", value: pctFormat(24 / Math.max(flagged.length, 1), 0), sub: lang === "en" ? "Of flagged students" : "గుర్తించిన విద్యార్థులలో" },
+            { label: "Interventions logged", value: "24", sub: "By class teachers" },
+            { label: "Pending review", value: fmtInt(critical.length + high.length), sub: "No intervention yet" },
+            { label: "Coverage rate", value: pctFormat(24 / Math.max(flagged.length, 1), 0), sub: "Of flagged students" },
           ].map((s) => (
             <div key={s.label} className="rounded-lg bg-zinc-50 border px-4 py-3">
               <div className="text-xl font-bold text-zinc-900">{s.value}</div>

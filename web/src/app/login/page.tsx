@@ -3,11 +3,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, DUMMY_USERS, ROLE_LABELS, ROLE_DASHBOARD } from "@/lib/auth";
 import { Eye, EyeOff, LogIn } from "lucide-react";
-import { useLang, T } from "@/lib/i18n";
 
 export default function LoginPage() {
   const { user, login } = useAuth();
-  const { lang } = useLang();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +24,7 @@ export default function LoginPage() {
     const ok = login(email.trim(), password);
     setLoading(false);
     if (!ok) {
-      setError(T.login.error[lang]);
+      setError("Invalid email or password. Use the demo credentials below.");
     }
   };
 
@@ -46,14 +44,14 @@ export default function LoginPage() {
           <div className="h-16 w-16 rounded-2xl bg-[color:var(--ap-navy)] flex items-center justify-center text-white font-bold text-2xl mx-auto">
             AP
           </div>
-          <h1 className="text-2xl font-bold text-zinc-900">{T.login.title[lang]}</h1>
-          <p className="text-sm text-zinc-500">{T.login.subtitle[lang]}</p>
+          <h1 className="text-2xl font-bold text-zinc-900">AP Dropout Guardian</h1>
+          <p className="text-sm text-zinc-500">Sign in to your role dashboard</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="rounded-xl border bg-white p-6 space-y-4 shadow-sm">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">{T.login.email[lang]}</label>
+            <label className="text-sm font-medium text-zinc-700">Email</label>
             <input
               type="email"
               value={email}
@@ -64,7 +62,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">{T.login.password[lang]}</label>
+            <label className="text-sm font-medium text-zinc-700">Password</label>
             <div className="relative">
               <input
                 type={showPw ? "text" : "password"}
@@ -96,13 +94,13 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-[color:var(--ap-navy)] text-white py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
           >
             <LogIn className="h-4 w-4" />
-            {loading ? (lang === "en" ? "Signing in…" : "లాగిన్ అవుతోంది…") : T.login.signIn[lang]}
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
         {/* Demo credentials */}
         <div className="rounded-xl border bg-zinc-50 p-4 space-y-3">
-          <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">{T.login.demoCredentials[lang]}</div>
+          <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Demo credentials — click to fill</div>
           <div className="space-y-2">
             {credentials.map((c) => (
               <button
