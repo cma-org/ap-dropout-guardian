@@ -15,6 +15,7 @@ const CREDENTIALS = [
   { role: "Teacher", roleTE: "ఉపాధ్యాయుడు", email: "teacher@zphs.ap.gov.in", password: "teacher123" },
   { role: "Head Master", roleTE: "ప్రధానోపాధ్యాయుడు", email: "principal@zphs.ap.gov.in", password: "hm123" },
   { role: "District Officer", roleTE: "జిల్లా అధికారి", email: "deo@ntr.ap.gov.in", password: "district123" },
+  { role: "School Education Dept.", roleTE: "పాఠశాల విద్యా శాఖ", email: "director@apsed.ap.gov.in", password: "sed123" },
 ];
 
 export default function LandingClient({ recall, precision, criticalCount }: Props) {

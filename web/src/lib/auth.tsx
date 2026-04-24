@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type Role = "teacher" | "hm" | "district";
+export type Role = "teacher" | "hm" | "district" | "sed";
 
 export interface UserSession {
   email: string;
@@ -42,18 +42,26 @@ export const DUMMY_USERS: Record<string, UserSession & { password: string }> = {
     name: "V. Lakshmipathi",
     district: DEMO_DISTRICT,
   },
+  "director@apsed.ap.gov.in": {
+    email: "director@apsed.ap.gov.in",
+    password: "sed123",
+    role: "sed",
+    name: "R. Satyanarayana",
+  },
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
   teacher: "Teacher",
   hm: "Head Master",
   district: "District Officer",
+  sed: "School Education Dept.",
 };
 
 export const ROLE_DASHBOARD: Record<Role, string> = {
   teacher: "/dashboard/teacher",
   hm: "/dashboard/hm",
   district: "/dashboard/district",
+  sed: "/dashboard/sed",
 };
 
 interface AuthCtx {
