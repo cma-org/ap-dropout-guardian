@@ -8,6 +8,19 @@ import { pctFormat, fmtInt, cn } from "@/lib/utils";
 import Link from "next/link";
 import { Search, Filter, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
+function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
+  const header = "child_sno,grade,gender,attendance_rate,fa_avg,risk_score,tier";
+  const rows = roster.map((r) =>
+    [r.child_sno, r.grade || "", r.gender_label, r.attendance_rate.toFixed(3), r.fa_avg ?? "", r.risk_score.toFixed(4), r.tier].join(",")
+  );
+  const csv = [header, ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url;
+  a.download = `roster_${schoolName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
 export default function StudentsListPage() {
   const { user } = useAuth();
   const { lang } = useLang();
@@ -16,6 +29,7 @@ export default function StudentsListPage() {
   const [search, setSearch] = useState("");
   const [genderFilter, setGenderFilter] = useState<string>("All");
   const [tierFilter, setTierFilter] = useState<string>("All");
+  const [gradeFilter, setGradeFilter] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const pageSize = 15;
@@ -25,7 +39,12 @@ export default function StudentsListPage() {
       fetch(`/data/roster/${user.schoolId}.json`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
-          setStudents(data);
+          // Simulate grades 6-10 if not present
+          const withGrades = data.map((s: any, i: number) => ({
+            ...s,
+            grade: s.grade || (6 + (i % 5))
+          }));
+          setStudents(withGrades);
           setLoading(false);
         });
     }
@@ -37,7 +56,8 @@ export default function StudentsListPage() {
       (genderFilter === "Male" && s.gender_label === "Male") ||
       (genderFilter === "Female" && s.gender_label === "Female");
     const matchesTier = tierFilter === "All" || s.tier === tierFilter;
-    return matchesSearch && matchesGender && matchesTier;
+    const matchesGrade = gradeFilter === "All" || String(s.grade) === gradeFilter;
+    return matchesSearch && matchesGender && matchesTier && matchesGrade;
   });
 
   const totalPages = Math.ceil(filtered.length / pageSize);
@@ -45,7 +65,7 @@ export default function StudentsListPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, genderFilter, tierFilter]);
+  }, [search, genderFilter, tierFilter, gradeFilter]);
 
   return (
     <div className="space-y-6">
@@ -68,7 +88,10 @@ export default function StudentsListPage() {
           >
             <Filter className="h-4 w-4" /> {T.common.filter[lang]}
           </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-[color:var(--ap-navy)] text-white rounded-lg text-sm font-medium hover:opacity-90">
+          <button 
+            onClick={() => exportRosterCSV(filtered, user?.schoolName || "school")}
+            className="flex items-center gap-2 px-3 py-1.5 bg-[color:var(--ap-navy)] text-white rounded-lg text-sm font-medium hover:opacity-90"
+          >
             <Download className="h-4 w-4" /> {T.common.export[lang]}
           </button>
         </div>
@@ -104,6 +127,20 @@ export default function StudentsListPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-500">{T.student.grade[lang]}:</span>
+            <select 
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              className="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
+            >
+              <option value="All">{T.all[lang]}</option>
+              {[6, 7, 8, 9, 10].map(g => (
+                <option key={g} value={String(g)}>{g}th</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
             <span className="text-sm text-zinc-500">{T.tierLabel[lang]}:</span>
             <select 
               value={tierFilter}
@@ -124,6 +161,7 @@ export default function StudentsListPage() {
             <thead>
               <tr className="bg-zinc-50 text-zinc-500 font-medium border-b border-zinc-100">
                 <th className="px-6 py-3">{lang === "en" ? "Student ID" : "విద్యార్థి ID"}</th>
+                <th className="px-6 py-3">{T.student.grade[lang]}</th>
                 <th className="px-6 py-3">{T.student.gender[lang]}</th>
                 <th className="px-6 py-3">{T.student.attendance[lang]}</th>
                 <th className="px-6 py-3">{T.student.marks[lang]}</th>
@@ -150,6 +188,7 @@ export default function StudentsListPage() {
                         {s.child_sno}
                       </Link>
                     </td>
+                    <td className="px-6 py-4 text-zinc-600">{s.grade}th</td>
                     <td className="px-6 py-4 text-zinc-600">{s.gender_label}</td>
                     <td className="px-6 py-4 tabular-nums">{pctFormat(s.attendance_rate, 0)}</td>
                     <td className="px-6 py-4 tabular-nums">{s.fa_avg?.toFixed(0) || "—"}</td>

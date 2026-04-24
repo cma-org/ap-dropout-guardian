@@ -109,6 +109,7 @@ export const T = {
     attendance: { en: "Attendance rate", te: "హాజరు శాతం" },
     marks: { en: "Marks (FA avg)", te: "మార్కులు (FA సగటు)" },
     gender: { en: "Gender", te: "లింగం" },
+    grade: { en: "Grade", te: "తరగతి" },
     age: { en: "Age", te: "వయస్సు" },
     school: { en: "School", te: "పాఠశాల" },
     district: { en: "District", te: "జిల్లా" },

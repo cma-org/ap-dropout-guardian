@@ -104,6 +104,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
   const [search, setSearch] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<RiskTier | "All">("All");
+  const [gradeFilter, setGradeFilter] = useState<number | "All">("All");
 
   const selected = schools.find((s) => s.school_id === selectedId);
 
@@ -395,6 +396,20 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
                       </button>
                     ))}
                   </div>
+                  <div className="flex gap-1 border-l pl-2">
+                    {(["All", 6, 7, 8, 9, 10] as const).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setGradeFilter(g)}
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase transition",
+                          gradeFilter === g ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                        )}
+                      >
+                        {g === "All" ? "All" : `${g}th`}
+                      </button>
+                    ))}
+                  </div>
                   <button
                     onClick={() => exportRosterCSV(roster || [], selected?.school_name ?? "school")}
                     className="flex items-center gap-1 px-2 py-1 rounded-lg border border-zinc-300 text-[10px] font-bold uppercase text-zinc-600 hover:bg-zinc-50"
@@ -413,6 +428,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
               ) : roster && roster.length > 0 ? (() => {
                 const filtered = roster.filter((r) => {
                   if (tierFilter !== "All" && r.tier !== tierFilter) return false;
+                  if (gradeFilter !== "All" && r.grade !== gradeFilter) return false;
                   if (studentSearch && !String(r.child_sno).includes(studentSearch)) return false;
                   return true;
                 });
@@ -423,6 +439,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
                         <thead className="sticky top-0 bg-white shadow-[0_1px_0_#e5e7eb]">
                           <tr className="text-left text-zinc-400 uppercase font-bold tracking-wider">
                             <th className="py-2 pr-4 font-bold">Child ID</th>
+                            <th className="py-2 px-3 font-bold">Grade</th>
                             <th className="py-2 px-3 font-bold">Gender</th>
                             <th className="py-2 px-3 font-bold text-right">Attendance</th>
                             <th className="py-2 px-3 font-bold text-right">FA Marks</th>
@@ -438,6 +455,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
                                   {r.child_sno}
                                 </Link>
                               </td>
+                              <td className="py-2 px-3 text-zinc-600 font-medium">{r.grade}th</td>
                               <td className="py-2 px-3 text-zinc-600">{r.gender_label}</td>
                               <td className="py-2 px-3 text-right tabular-nums text-zinc-600">{pctFormat(r.attendance_rate, 0)}</td>
                               <td className="py-2 px-3 text-right tabular-nums text-zinc-600">
@@ -456,7 +474,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
                     </div>
                     <div className="text-[10px] text-zinc-400 mt-4 font-medium italic">
                       Showing {Math.min(filtered.length, 200)} of {filtered.length} students
-                      {tierFilter !== "All" || studentSearch ? ` (filtered from ${roster.length})` : ""}
+                      {(tierFilter !== "All" || gradeFilter !== "All" || studentSearch) ? ` (filtered from ${roster.length})` : ""}
                     </div>
                   </>
                 );
