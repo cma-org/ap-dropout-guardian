@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
+import { useLang, T } from "@/lib/i18n";
 import type { RosterStudent, School, RiskTier } from "@/lib/types";
 import { TIER_COLORS, TIER_BG_SOFT } from "@/lib/types";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
@@ -65,13 +66,13 @@ export default function TeacherDashboard({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">{T.dashboard.teacher[lang]}</h1>
+          <h1 className="text-2xl font-semibold text-zinc-900">{T.teacherView.title[lang]}</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
-            {school?.school_name ?? "My School"} · {school?.district_name} · AY 2024-25
+            {school?.school_name ?? (lang === "en" ? "My School" : "నా పాఠశాల")} · {school?.district_name} · {T.common.ay[lang]}
           </p>
         </div>
         <div className="text-xs text-zinc-500 bg-zinc-100 rounded-lg px-3 py-2">
-          {T.dashboard.logIn[lang]} <span className="font-semibold text-zinc-700">{user?.name}</span>
+          {T.common.loggedInAs[lang]} <span className="font-semibold text-zinc-700">{user?.name}</span>
         </div>
       </div>
 
@@ -81,10 +82,10 @@ export default function TeacherDashboard({
           <Bell className="h-5 w-5 text-red-600 shrink-0 mt-0.5 animate-pulse" />
           <div>
             <div className="font-semibold text-red-900">
-              {critical.length} {T.dashboard.alertBanner[lang]}
+              {critical.length} {T.teacherDashboard.criticalAlert[lang]}
             </div>
             <div className="text-sm text-red-700 mt-0.5">
-              {T.dashboard.alertSub[lang]}
+              {T.teacherDashboard.criticalAlertSub[lang]}
             </div>
           </div>
         </div>
@@ -93,10 +94,10 @@ export default function TeacherDashboard({
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: T.dashboard.totalStudents[lang], value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: T.dashboard.myClass[lang] },
-          { label: T.dashboard.flaggedRisk[lang], value: fmtInt(flagged.length), icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, sub: `${pctFormat(flagged.length / Math.max(roster.length, 1), 0)} ${T.dashboard.ofClass[lang]}`, tone: "warn" },
-          { label: T.dashboard.criticalTier[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, sub: T.dashboard.needsAction[lang], tone: "bad" },
-          { label: T.dashboard.avgAttendance[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, sub: T.dashboard.classAverage[lang], tone: avgAtt >= 0.75 ? "good" : "warn" },
+          { label: T.common.totalStudents[lang], value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: lang === "en" ? "In my class" : "నా తరగతిలో" },
+          { label: T.common.flagged[lang], value: fmtInt(flagged.length), icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, sub: `${pctFormat(flagged.length / Math.max(roster.length, 1), 0)} ${lang === "en" ? "of class" : "తరగతిలో"}`, tone: "warn" },
+          { label: T.tier.Critical[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, sub: lang === "en" ? "Needs immediate action" : "తక్షణ చర్య అవసరం", tone: "bad" },
+          { label: T.common.avgRisk[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, sub: lang === "en" ? "Class average" : "తరగతి సగటు", tone: avgAtt >= 0.75 ? "good" : "warn" },
         ].map((s) => (
           <div key={s.label} className={cn("rounded-xl border bg-white px-4 py-3", s.tone === "bad" ? "border-red-200 bg-red-50/30" : s.tone === "warn" ? "border-amber-200 bg-amber-50/30" : "")}>
             <div className="flex items-center justify-between mb-2">
@@ -114,9 +115,9 @@ export default function TeacherDashboard({
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-zinc-800 flex items-center gap-2">
             <TrendingDown className="h-4 w-4 text-red-500" />
-            {T.dashboard.monthlyTrend[lang]}
+            {T.teacherDashboard.trendTitle[lang]}
           </h2>
-          <span className="text-xs text-zinc-400 italic">{T.dashboard.simulated[lang]}</span>
+          <span className="text-xs text-zinc-400 italic">{T.teacherDashboard.simulated[lang]}</span>
         </div>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={trend} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -126,8 +127,8 @@ export default function TeacherDashboard({
             <YAxis yAxisId="flag" orientation="right" tick={{ fontSize: 11 }} width={36} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line yAxisId="att" type="monotone" dataKey="attendance" stroke="#0b3b6f" strokeWidth={2} dot={false} name={T.dashboard.attendancePct[lang]} />
-            <Line yAxisId="flag" type="monotone" dataKey="flagged" stroke="#f97316" strokeWidth={2} dot={false} name={T.dashboard.flaggedStudents[lang]} />
+            <Line yAxisId="att" type="monotone" dataKey="attendance" stroke="#0b3b6f" strokeWidth={2} dot={false} name={T.teacherDashboard.attendanceLabel[lang]} />
+            <Line yAxisId="flag" type="monotone" dataKey="flagged" stroke="#f97316" strokeWidth={2} dot={false} name={T.teacherDashboard.flaggedLabel[lang]} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -138,22 +139,24 @@ export default function TeacherDashboard({
       {/* Roster */}
       <div className="rounded-xl border bg-white">
         <div className="px-5 py-4 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-semibold text-zinc-800">{T.dashboard.rosterTitle[lang]}</h2>
+          <h2 className="font-semibold text-zinc-800">{T.teacherDashboard.rosterTitle[lang]}</h2>
           <div className="flex gap-1.5 flex-wrap">
-            {(["All", "Critical", "High", "Medium", "Low"] as const).map((t) => (
+            {([T.common.filter[lang], "Critical", "High", "Medium", "Low"] as const).map((t, idx) => {
+              const realTier = idx === 0 ? "All" : t;
+              return (
               <button
                 key={t}
-                onClick={() => setFilter(t)}
+                onClick={() => setFilter(realTier as RiskTier | "All")}
                 className={cn(
                   "px-3 py-1 rounded-full text-xs font-medium transition",
-                  filter === t
-                    ? t === "All" ? "bg-zinc-900 text-white" : TIER_COLORS[t as RiskTier]
+                  filter === realTier
+                    ? realTier === "All" ? "bg-zinc-900 text-white" : TIER_COLORS[realTier as RiskTier]
                     : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                 )}
               >
-                {t} {t !== "All" && `(${roster.filter((r) => r.tier === t).length})`}
+                {idx === 0 ? T.common.filter[lang] : T.tier[realTier as RiskTier][lang]} {realTier !== "All" && `(${roster.filter((r) => r.tier === realTier).length})`}
               </button>
-            ))}
+            )})}
           </div>
         </div>
         <div className="divide-y divide-zinc-100">
@@ -170,8 +173,8 @@ export default function TeacherDashboard({
               <RiskBadge tier={s.tier} size="sm" />
               <div className="flex-1 grid grid-cols-3 gap-2 text-sm text-zinc-700">
                 <span>{s.gender_label}</span>
-                <span className={s.attendance_rate < 0.5 ? "text-red-600 font-medium" : ""}>{pctFormat(s.attendance_rate, 0)} {T.dashboard.attMark[lang]}</span>
-                <span>{s.fa_avg !== null ? `${s.fa_avg.toFixed(0)} ${T.dashboard.marks[lang]}` : "—"}</span>
+                <span className={s.attendance_rate < 0.5 ? "text-red-600 font-medium" : ""}>{pctFormat(s.attendance_rate, 0)} {T.common.attShort[lang]}</span>
+                <span>{s.fa_avg !== null ? `${s.fa_avg.toFixed(0)} ${T.common.marksShort[lang]}` : "—"}</span>
               </div>
               {loggedSet.has(s.child_sno) ? (
                 <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
@@ -182,7 +185,7 @@ export default function TeacherDashboard({
           ))}
           {displayed.length > 30 && (
             <div className="px-5 py-3 text-sm text-zinc-500 text-center">
-              Showing top 30 of {displayed.length}. <Link href="/teacher" className="text-[color:var(--ap-navy)] underline">See full roster →</Link>
+              {T.teacherDashboard.showingTop[lang].replace("{count}", displayed.length.toString())}. <Link href="/teacher/students" className="text-[color:var(--ap-navy)] underline">{T.teacherDashboard.seeFullRoster[lang]} →</Link>
             </div>
           )}
         </div>
@@ -192,15 +195,15 @@ export default function TeacherDashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link href={`/student/${critical[0]?.child_sno}`} className="rounded-xl border border-red-200 bg-red-50 p-4 hover:bg-red-100 transition flex items-center justify-between group">
           <div>
-            <div className="font-semibold text-red-900">{T.dashboard.reviewTop[lang]}</div>
-            <div className="text-sm text-red-700 mt-0.5">{T.dashboard.shap[lang]}</div>
+            <div className="font-semibold text-red-900">{T.teacherDashboard.reviewTop[lang]}</div>
+            <div className="text-sm text-red-700 mt-0.5">{T.teacherDashboard.reviewTopSub[lang]}</div>
           </div>
           <ArrowUpRight className="h-5 w-5 text-red-400 group-hover:text-red-600" />
         </Link>
-        <Link href="/teacher" className="rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 transition flex items-center justify-between group">
+        <Link href="/teacher/students" className="rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 transition flex items-center justify-between group">
           <div>
-            <div className="font-semibold text-zinc-900">{T.dashboard.schoolBrowser[lang]}</div>
-            <div className="text-sm text-zinc-500 mt-0.5">{T.dashboard.switchSchools[lang]}</div>
+            <div className="font-semibold text-zinc-900">{T.teacherDashboard.fullBrowser[lang]}</div>
+            <div className="text-sm text-zinc-500 mt-0.5">{T.teacherDashboard.fullBrowserSub[lang]}</div>
           </div>
           <ArrowUpRight className="h-5 w-5 text-zinc-300 group-hover:text-zinc-500" />
         </Link>

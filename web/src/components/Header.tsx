@@ -1,29 +1,16 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_LABELS, ROLE_DASHBOARD } from "@/lib/auth";
-import { cn } from "@/lib/utils";
 import { Languages, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {
   const { lang, toggle } = useLang();
   const { user, logout } = useAuth();
-  const path = usePathname();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const publicNav = [
-    { href: "/", label: "Home" },
-    { href: "/overview", label: T.nav.overview[lang] },
-    { href: "/map", label: T.nav.map[lang] },
-  ];
-
-  const roleNav = user ? [
-    { href: ROLE_DASHBOARD[user.role], label: "My Dashboard", icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
-    ...publicNav,
-  ] : publicNav;
 
   const handleLogout = () => {
     logout();
@@ -33,7 +20,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-[color:var(--ap-navy)] text-white shadow-sm">
-      <div className="max-w-[1400px] mx-auto flex items-center gap-4 px-6 py-3">
+      <div className="flex items-center gap-4 px-6 py-3">
         <Link href="/" className="flex items-center gap-3 min-w-0 shrink-0">
           <div className="h-10 w-10 rounded-full bg-[color:var(--ap-orange)] flex items-center justify-center text-white font-bold text-sm shrink-0">
             AP
@@ -44,26 +31,7 @@ export default function Header() {
           </div>
         </Link>
 
-        <nav className="flex items-center gap-1 ml-auto flex-wrap">
-          {roleNav.map((n) => {
-            const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors",
-                  active
-                    ? "bg-white/15 text-white"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
-                )}
-              >
-                {"icon" in n && n.icon}
-                {n.label}
-              </Link>
-            );
-          })}
-
+        <nav className="flex items-center gap-1 ml-auto">
           <button
             onClick={toggle}
             className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-sm"
@@ -101,14 +69,14 @@ export default function Header() {
                     className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
                   >
                     <LayoutDashboard className="h-4 w-4 text-zinc-400" />
-                    My Dashboard
+                    {T.common.myDashboard[lang]}
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign out
+                    {T.common.signOut[lang]}
                   </button>
                 </div>
               )}
@@ -118,7 +86,7 @@ export default function Header() {
               href="/login"
               className="ml-2 px-4 py-1.5 rounded-md bg-[color:var(--ap-orange)] hover:opacity-90 text-sm font-medium"
             >
-              Sign in
+              {T.common.signIn[lang]}
             </Link>
           )}
         </nav>
