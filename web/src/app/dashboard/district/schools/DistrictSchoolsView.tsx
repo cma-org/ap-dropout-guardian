@@ -6,7 +6,7 @@ import type { School, RosterStudent, RiskTier } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
 import { useLang, T } from "@/lib/i18n";
 import { fmtInt, pctFormat, cn } from "@/lib/utils";
-import { Search, Users, AlertCircle, Download, User, BarChart2, TrendingUp } from "lucide-react";
+import { Search, Users, AlertCircle, Download, User, BarChart2, TrendingUp, School as SchoolIcon } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend, Cell,
@@ -27,11 +27,15 @@ function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
 
 const MONTHS = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 function schoolTrend(n_flagged: number) {
-  return MONTHS.map((month, i) => ({
-    month,
-    flagged: Math.max(1, Math.round(n_flagged * (0.6 + Math.sin(i) * 0.2))),
-    attendance: 85 + Math.random() * 10,
-  }));
+  return MONTHS.map((month, i) => {
+    // Ensure the last month (current) exactly matches the actual flagged count
+    const isLastMonth = i === MONTHS.length - 1;
+    return {
+      month,
+      flagged: isLastMonth ? n_flagged : Math.max(1, Math.round(n_flagged * (0.6 + Math.sin(i) * 0.2))),
+      attendance: 85 + Math.random() * 10,
+    };
+  });
 }
 
 function generateSimulatedRoster(school: School, existing: RosterStudent[] = []): RosterStudent[] {
@@ -82,13 +86,18 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
     return schools[0]?.school_id ?? 0;
   });
 
+  // Keep track of the last ID from URL to avoid re-selecting if user manually switched
+  const [lastUrlId, setLastUrlId] = useState<string | null>(searchParams.get("id"));
+
   useEffect(() => {
     const idParam = searchParams.get("id");
-    if (idParam) {
-      const id = Number(idParam);
-      if (id !== selectedId) setSelectedId(id);
+    if (idParam !== lastUrlId) {
+      setLastUrlId(idParam);
+      if (idParam) {
+        setSelectedId(Number(idParam));
+      }
     }
-  }, [searchParams, selectedId]);
+  }, [searchParams, lastUrlId]);
 
   const [roster, setRoster] = useState<RosterStudent[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -149,52 +158,105 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
   const hmName = selected ? `HM. ${selected.school_name?.split(' ').pop() || "Principal"}` : "";
   const nTeachers = selected ? Math.max(5, Math.floor(selected.n_students / 30)) : 0;
 
+  // District aggregate stats
+  const districtStats = useMemo(() => {
+    return {
+      totalSchools: schools.length,
+      totalStudents: schools.reduce((acc, s) => acc + s.n_students, 0),
+      totalFlagged: schools.reduce((acc, s) => acc + s.n_flagged, 0),
+      avgRisk: schools.length > 0 ? schools.reduce((acc, s) => acc + s.avg_risk, 0) / schools.length : 0,
+    };
+  }, [schools]);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5 min-h-[calc(100vh-200px)]">
-      {/* School selector sidebar */}
-      <aside className="rounded-xl border bg-white overflow-hidden flex flex-col max-h-[calc(100vh-160px)]">
-        <div className="px-4 py-3 border-b bg-zinc-50">
-          <label className="text-xs font-medium text-zinc-600 uppercase tracking-wide">
-            Select School
-          </label>
-          <div className="relative mt-2">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-sm bg-white border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/30"
-              placeholder={lang === "en" ? "Search school / mandal" : "పాఠశాల / మండలం"}
-            />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-900 flex items-center gap-2">
+          <SchoolIcon className="h-6 w-6 text-[color:var(--ap-navy)]" />
+          {lang === "en" ? "Schools" : "పాఠశాలలు"}
+        </h1>
+        <p className="text-sm text-zinc-500 mt-0.5">
+          {lang === "en" 
+            ? "Detailed analytics and student roster for all schools in the district." 
+            : "జిల్లాలోని అన్ని పాఠశాలల వివరణాత్మక విశ్లేషణలు మరియు విద్యార్థుల జాబితా."}
+        </p>
+      </div>
+
+      {/* District Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Total Schools</div>
+          <div className="text-xl font-bold text-zinc-900 flex items-center gap-2">
+            <SchoolIcon className="h-5 w-5 text-zinc-400" />
+            {fmtInt(districtStats.totalSchools)}
           </div>
         </div>
-        <div className="overflow-auto flex-1 divide-y divide-zinc-100">
-          {filteredSchools.slice(0, 80).map((s) => (
-            <button
-              key={s.school_id}
-              onClick={() => setSelectedId(s.school_id)}
-              className={cn(
-                "w-full text-left px-4 py-3 hover:bg-zinc-50 transition-colors",
-                s.school_id === selectedId && "bg-blue-50 border-l-4 border-l-[color:var(--ap-navy)]"
-              )}
-            >
-              <div className="text-sm font-medium text-zinc-900 truncate">{s.school_name}</div>
-              <div className="text-xs text-zinc-500 truncate">
-                {s.district_name} · {s.mandal_name}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="inline-flex items-center gap-1 text-xs text-red-700">
-                  <AlertCircle className="h-3 w-3" />
-                  {fmtInt(s.n_flagged)} flagged
-                </span>
-                <span className="text-xs text-zinc-400">· {fmtInt(s.n_students)} students</span>
-              </div>
-            </button>
-          ))}
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Total Students</div>
+          <div className="text-xl font-bold text-zinc-900 flex items-center gap-2">
+            <Users className="h-5 w-5 text-zinc-400" />
+            {fmtInt(districtStats.totalStudents)}
+          </div>
         </div>
-      </aside>
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <div className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-1">District Flagged</div>
+          <div className="text-xl font-bold text-red-600">
+            {fmtInt(districtStats.totalFlagged)}
+          </div>
+        </div>
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">District Avg Risk</div>
+          <div className="text-xl font-bold text-zinc-900">
+            {pctFormat(districtStats.avgRisk, 1)}
+          </div>
+        </div>
+      </div>
 
-      {/* Main content panel */}
-      <section className="space-y-5 overflow-auto max-h-[calc(100vh-160px)] pr-2">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5 min-h-[calc(100vh-200px)]">
+        {/* School selector sidebar */}
+        <aside className="rounded-xl border bg-white overflow-hidden flex flex-col max-h-[calc(100vh-160px)]">
+          <div className="px-4 py-3 border-b bg-zinc-50">
+            <label className="text-xs font-medium text-zinc-600 uppercase tracking-wide">
+              Select School
+            </label>
+            <div className="relative mt-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-white border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/30"
+                placeholder={lang === "en" ? "Search school / mandal" : "పాఠశాల / మండలం"}
+              />
+            </div>
+          </div>
+          <div className="overflow-auto flex-1 divide-y divide-zinc-100">
+            {filteredSchools.map((s) => (
+              <button
+                key={s.school_id}
+                onClick={() => setSelectedId(s.school_id)}
+                className={cn(
+                  "w-full text-left px-4 py-3 hover:bg-zinc-50 transition-colors",
+                  s.school_id === selectedId && "bg-blue-50 border-l-4 border-l-[color:var(--ap-navy)]"
+                )}
+              >
+                <div className="text-sm font-medium text-zinc-900 truncate">{s.school_name}</div>
+                <div className="text-xs text-zinc-500 truncate">
+                  {s.district_name} · {s.mandal_name}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center gap-1 text-xs text-red-700">
+                    <AlertCircle className="h-3 w-3" />
+                    {fmtInt(s.n_flagged)} flagged
+                  </span>
+                  <span className="text-xs text-zinc-400">· {fmtInt(s.n_students)} students</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* Main content panel */}
+        <section className="space-y-5 overflow-auto max-h-[calc(100vh-160px)] pr-2">
         {selected ? (
           <>
             {/* Header Stats */}
@@ -422,5 +484,6 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
         )}
       </section>
     </div>
-  );
+  </div>
+);
 }
