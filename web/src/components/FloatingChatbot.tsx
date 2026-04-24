@@ -326,6 +326,13 @@ export default function FloatingChatbot() {
               </div>
             </div>
             <div className={cn("h-2 w-2 rounded-full", sysData ? "bg-emerald-400" : "bg-amber-400")} />
+            <button
+              onClick={() => setOpen(false)}
+              className="ml-1 h-6 w-6 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition shrink-0"
+              aria-label="Close"
+            >
+              <X className="h-3.5 w-3.5 text-white" />
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-zinc-50 min-h-[280px] max-h-[380px]">
