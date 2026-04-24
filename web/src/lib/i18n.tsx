@@ -23,10 +23,10 @@ export function useLang() {
 }
 
 export const T = {
-  appName: { en: "Stay-In School", te: "స్టే-ఇన్ స్కూల్" },
+  appName: { en: "AP Stay-In School", te: "AP స్టే-ఇన్ స్కూల్" },
   subtitle: {
-    en: "AI-powered early-warning system to keep every student in school — RTGS / School Education Dept, Govt of Andhra Pradesh",
-    te: "ప్రతి విద్యార్థిని పాఠశాలలో ఉంచడానికి AI-శక్తి ఉన్న ముందస్తు హెచ్చరిక వ్యవస్థ — RTGS / పాఠశాల విద్యా శాఖ, AP",
+    en: "AI-powered early-warning system for secondary education",
+    te: "సెకండరీ విద్య కోసం AI-శక్తి ఉన్న ముందస్తు హెచ్చరిక వ్యవస్థ",
   },
   showing: { en: "Showing", te: "చూపిస్తున్నాము" },
   of: { en: "of", te: "మొత్తం" },
@@ -214,7 +214,7 @@ export const T = {
     topMandals: { en: "Mandals with highest dropout risk", te: "అత్యధిక డ్రాపౌట్ ప్రమాదం గల మండలాలు" },
   },
   login: {
-    title: { en: "Stay-In School", te: "స్టే-ఇన్ స్కూల్" },
+    title: { en: "AP Stay-In School", te: "AP స్టే-ఇన్ స్కూల్" },
     subtitle: { en: "Sign in to your role dashboard", te: "మీ రోల్ డ్యాష్‌బోర్డ్‌కు సైన్ ఇన్ చేయండి" },
     email: { en: "Email", te: "ఇమెయిల్" },
     password: { en: "Password", te: "పాస్‌వర్డ్" },
@@ -295,7 +295,7 @@ export const T = {
   },
   landing: {
     badge: { en: "RTGS AI Hackathon 2026 — Problem 100004", te: "RTGS AI హ్యాకథాన్ 2026 — సమస్య 100004" },
-    title: { en: "Stay-In School", te: "స్టే-ఇన్ స్కూల్" },
+    title: { en: "AP Stay-In School", te: "AP స్టే-ఇన్ స్కూల్" },
     desc: { en: "AI-assisted early identification and support for at-risk students in Classes 9–10. Serving teachers, school heads, and district officers across Andhra Pradesh.", te: "తరగతి 9–10 లో ప్రమాదంలో ఉన్న విద్యార్థుల ముందస్తు గుర్తింపు మరియు సహాయం. ఆంధ్రప్రదేశ్ అంతటా ఉపాధ్యాయులు, పాఠశాల అధిపతులు మరియు జిల్లా అధికారులకు సేవలు." },
     signIn: { en: "Sign in to your dashboard", te: "మీ డ్యాష్‌బోర్డ్‌కు సైన్ ఇన్ చేయండి" },
     viewMetrics: { en: "View model metrics", te: "మోడల్ మెట్రిక్‌లు చూడండి" },

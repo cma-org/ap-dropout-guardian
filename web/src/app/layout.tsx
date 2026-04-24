@@ -11,8 +11,8 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Stay-In School",
-  description: "AI-powered system to keep every student in school — RTGS, Government of Andhra Pradesh",
+  title: "AP Stay-In School",
+  description: "AI-powered early-warning system for secondary education — RTGS, Government of Andhra Pradesh",
 };
 
 export default function RootLayout({

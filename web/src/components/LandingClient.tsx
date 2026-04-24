@@ -15,7 +15,6 @@ const CREDENTIALS = [
   { role: "Teacher", roleTE: "ఉపాధ్యాయుడు", email: "teacher@zphs.ap.gov.in", password: "teacher123" },
   { role: "Head Master", roleTE: "ప్రధానోపాధ్యాయుడు", email: "principal@zphs.ap.gov.in", password: "hm123" },
   { role: "District Officer", roleTE: "జిల్లా అధికారి", email: "deo@ntr.ap.gov.in", password: "district123" },
-  { role: "RTGS Admin", roleTE: "RTGS అడ్మిన్", email: "admin@rtgs.ap.gov.in", password: "rtgs123" },
 ];
 
 export default function LandingClient({ recall, precision, criticalCount }: Props) {
@@ -48,9 +47,6 @@ export default function LandingClient({ recall, precision, criticalCount }: Prop
     <div className="space-y-12">
       {/* Hero */}
       <section className="text-center py-12 space-y-4">
-        <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-full px-4 py-1.5 text-sm font-medium">
-          {t.badge[lang]}
-        </div>
         <h1 className="text-4xl md:text-5xl font-bold text-zinc-900 leading-tight">
           {t.title[lang]}
         </h1>

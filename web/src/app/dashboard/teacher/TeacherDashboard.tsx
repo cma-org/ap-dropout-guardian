@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
-import { useLang, T } from "@/lib/i18n";
 import type { RosterStudent, School, RiskTier } from "@/lib/types";
 import { TIER_COLORS, TIER_BG_SOFT } from "@/lib/types";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
