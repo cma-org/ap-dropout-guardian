@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import { I18nProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
+import FloatingChatbot from "@/components/FloatingChatbot";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -11,8 +12,8 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "AP Dropout Guardian",
-  description: "AI-assisted early-warning system for student dropouts — RTGS, Government of Andhra Pradesh",
+  title: "Stay-In School",
+  description: "AI-powered system to keep every student in school — RTGS, Government of Andhra Pradesh",
 };
 
 export default function RootLayout({
@@ -30,6 +31,7 @@ export default function RootLayout({
             <footer className="text-center text-xs text-zinc-500 py-4 border-t border-zinc-200">
               RTGS AI Hackathon — Confidential. Data: School Education Dept. DPDP-restricted fields shown as calibrated stand-ins.
             </footer>
+            <FloatingChatbot />
           </I18nProvider>
         </AuthProvider>
       </body>

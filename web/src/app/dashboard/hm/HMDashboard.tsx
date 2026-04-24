@@ -17,6 +17,7 @@ import {
   School as SchoolIcon, Users, AlertTriangle, TrendingDown,
   CheckCircle2, ArrowUpRight, Activity,
 } from "lucide-react";
+import InfoTooltip from "@/components/InfoTooltip";
 
 const MONTHS = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 
@@ -97,14 +98,14 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: lang === "en" ? "Total enrolled" : "మొత్తం నమోదు", value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: lang === "en" ? "All classes" : "అన్ని తరగతులు" },
-          { label: T.dashboard.flaggedRisk[lang], value: fmtInt(flagged.length), icon: <TrendingDown className="h-5 w-5 text-amber-500" />, sub: pctFormat(flagged.length / Math.max(roster.length, 1), 0) + (lang === "en" ? " of school" : " పాఠశాల"), tone: "warn" },
-          { label: T.dashboard.criticalTier[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, tone: "bad", sub: T.dashboard.needsAction[lang] },
-          { label: T.dashboard.avgAttendance[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, tone: avgAtt >= 0.75 ? "good" : "warn", sub: lang === "en" ? "School average" : "పాఠశాల సగటు" },
+          { label: lang === "en" ? "Total enrolled" : "మొత్తం నమోదు", value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: lang === "en" ? "All classes" : "అన్ని తరగతులు", info: "All students enrolled across all classes in this school for AY 2024-25. Source: School Education Dept FIN_YEAR dataset." },
+          { label: T.dashboard.flaggedRisk[lang], value: fmtInt(flagged.length), icon: <TrendingDown className="h-5 w-5 text-amber-500" />, sub: pctFormat(flagged.length / Math.max(roster.length, 1), 0) + (lang === "en" ? " of school" : " పాఠశాల"), tone: "warn", info: "Students across all classes with predicted dropout risk ≥51%. Ensure each class teacher has reviewed their flagged students and logged interventions." },
+          { label: T.dashboard.criticalTier[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, tone: "bad", sub: T.dashboard.needsAction[lang], info: "Students with risk ≥85% requiring immediate action. RTGS mandates teacher intervention within 48 hours. This count is reported at district level." },
+          { label: T.dashboard.avgAttendance[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, tone: avgAtt >= 0.75 ? "good" : "warn", sub: lang === "en" ? "School average" : "పాఠశాల సగటు", info: "Mean attendance rate across all enrolled students. District benchmark: ≥75%. Consistently below 70% triggers a district-level school review under AP Education Policy." },
         ].map((s) => (
           <div key={s.label} className={cn("rounded-xl border bg-white px-4 py-3", s.tone === "bad" ? "border-red-200 bg-red-50/30" : s.tone === "warn" ? "border-amber-200 bg-amber-50/30" : "")}>
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-zinc-500 font-medium">{s.label}</div>
+              <div className="flex items-center gap-1 text-xs text-zinc-500 font-medium">{s.label}<InfoTooltip text={s.info} /></div>
               {s.icon}
             </div>
             <div className={cn("text-2xl font-bold", s.tone === "bad" ? "text-red-700" : s.tone === "warn" ? "text-amber-700" : s.tone === "good" ? "text-emerald-700" : "text-zinc-900")}>{s.value}</div>

@@ -13,6 +13,7 @@ import {
   Bell, AlertTriangle, TrendingDown, Users, CheckCircle2,
   ArrowUpRight, ChevronRight, Activity,
 } from "lucide-react";
+import InfoTooltip from "@/components/InfoTooltip";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -93,14 +94,14 @@ export default function TeacherDashboard({
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: T.dashboard.totalStudents[lang], value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: T.dashboard.myClass[lang] },
-          { label: T.dashboard.flaggedRisk[lang], value: fmtInt(flagged.length), icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, sub: `${pctFormat(flagged.length / Math.max(roster.length, 1), 0)} ${T.dashboard.ofClass[lang]}`, tone: "warn" },
-          { label: T.dashboard.criticalTier[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, sub: T.dashboard.needsAction[lang], tone: "bad" },
-          { label: T.dashboard.avgAttendance[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, sub: T.dashboard.classAverage[lang], tone: avgAtt >= 0.75 ? "good" : "warn" },
+          { label: T.dashboard.totalStudents[lang], value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: T.dashboard.myClass[lang], info: "All students enrolled in your class for AY 2024-25. Source: School Education Dept FIN_YEAR dataset." },
+          { label: T.dashboard.flaggedRisk[lang], value: fmtInt(flagged.length), icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, sub: `${pctFormat(flagged.length / Math.max(roster.length, 1), 0)} ${T.dashboard.ofClass[lang]}`, tone: "warn", info: "Students with predicted dropout probability ≥51% (Medium, High, or Critical tier). Review their profiles and log an intervention." },
+          { label: T.dashboard.criticalTier[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, sub: T.dashboard.needsAction[lang], tone: "bad", info: "Students with risk score ≥85%. RTGS protocol: teacher must log an intervention within 48 hours. Contact parent and assign ward volunteer." },
+          { label: T.dashboard.avgAttendance[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, sub: T.dashboard.classAverage[lang], tone: avgAtt >= 0.75 ? "good" : "warn", info: "Mean attendance rate across all students in your class. Below 75% triggers amber alert; below 60% is critical and requires HM escalation." },
         ].map((s) => (
           <div key={s.label} className={cn("rounded-xl border bg-white px-4 py-3", s.tone === "bad" ? "border-red-200 bg-red-50/30" : s.tone === "warn" ? "border-amber-200 bg-amber-50/30" : "")}>
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-zinc-500 font-medium">{s.label}</div>
+              <div className="flex items-center gap-1 text-xs text-zinc-500 font-medium">{s.label}<InfoTooltip text={s.info} /></div>
               {s.icon}
             </div>
             <div className={cn("text-2xl font-bold", s.tone === "bad" ? "text-red-700" : s.tone === "warn" ? "text-amber-700" : s.tone === "good" ? "text-emerald-700" : "text-zinc-900")}>{s.value}</div>

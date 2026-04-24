@@ -19,10 +19,10 @@ export default async function OverviewPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricCard label="Recall" value={pctFormat(t.recall, 1)} sub="Share of dropouts caught" tone={t.recall >= 0.80 ? "good" : "warn"} />
-        <MetricCard label="Precision" value={pctFormat(t.precision, 1)} sub="Of flagged, how many are real" tone={t.precision >= 0.20 ? "good" : "warn"} />
-        <MetricCard label="PR-AUC" value={t.pr_auc.toFixed(3)} sub="Model ranking quality" />
-        <MetricCard label="ROC-AUC" value={t.roc_auc.toFixed(3)} sub="Overall separability" />
+        <MetricCard label="Recall" value={pctFormat(t.recall, 1)} sub="Share of dropouts caught" tone={t.recall >= 0.80 ? "good" : "warn"} info="True positive rate: share of actual dropouts correctly flagged. RTGS criterion: exclusion error <20% requires recall >80%. Primary success gate for this PoC." />
+        <MetricCard label="Precision" value={pctFormat(t.precision, 1)} sub="Of flagged, how many are real" tone={t.precision >= 0.20 ? "good" : "warn"} info="Of all students flagged at-risk, the fraction who are true dropouts. RTGS criterion: inclusion error <80% means precision must exceed 20%. Teachers de-escalate false positives easily." />
+        <MetricCard label="PR-AUC" value={t.pr_auc.toFixed(3)} sub="Model ranking quality" info="Area under Precision-Recall curve. Robust to class imbalance (only 1.3% of students drop out). Higher = better at ranking true dropouts above non-dropouts at any threshold." />
+        <MetricCard label="ROC-AUC" value={t.roc_auc.toFixed(3)} sub="Overall separability" info="Area under ROC curve. Measures overall ability to separate dropouts from non-dropouts. 0.5 = random baseline, 1.0 = perfect. Complementary to PR-AUC for imbalanced data." />
       </div>
 
       <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 flex gap-3 items-start">
