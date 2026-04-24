@@ -84,8 +84,8 @@ export default function HMAnalyticsPage() {
   const factorData = [
     { factorId: "attendance" as const, name: lang === "en" ? "Low Attendance" : "తక్కువ హాజరు", value: students.filter(s => s.attendance_rate < 0.6).length, icon: Activity },
     { factorId: "marks" as const, name: lang === "en" ? "Low Marks" : "తక్కువ మార్కులు", value: students.filter(s => (s.fa_avg || 0) < 40).length, icon: GraduationCap },
-    { factorId: "migration" as const, name: lang === "en" ? "Migration" : "వలసలు", value: students.filter(s => s.migration_flag).length, icon: TrendingDown },
-    { factorId: "economic" as const, name: lang === "en" ? "Economic" : "ఆర్థికం", value: students.filter(s => s.family_income_bracket < 2).length, icon: AlertTriangle },
+    { factorId: "migration" as const, name: lang === "en" ? "Migration" : "వలసలు", value: students.filter(s => !!s.migration_flag).length, icon: TrendingDown },
+    { factorId: "economic" as const, name: lang === "en" ? "Economic" : "ఆర్థికం", value: students.filter(s => (s.family_income_bracket ?? 99) < 2).length, icon: AlertTriangle },
   ].sort((a, b) => b.value - a.value);
 
   const gradeRiskData = [8, 9, 10].map(g => ({
@@ -96,10 +96,10 @@ export default function HMAnalyticsPage() {
   }));
 
   const casteData = [
-    { name: 'OC', value: students.filter(s => s.caste_clean === 1 && s.tier !== 'Low').length },
-    { name: 'BC', value: students.filter(s => s.caste_clean === 2 && s.tier !== 'Low').length },
-    { name: 'SC', value: students.filter(s => s.caste_clean === 3 && s.tier !== 'Low').length },
-    { name: 'ST', value: students.filter(s => s.caste_clean === 4 && s.tier !== 'Low').length },
+    { name: 'OC', value: students.filter(s => (s.caste_clean ?? 0) === 1 && s.tier !== 'Low').length },
+    { name: 'BC', value: students.filter(s => (s.caste_clean ?? 0) === 2 && s.tier !== 'Low').length },
+    { name: 'SC', value: students.filter(s => (s.caste_clean ?? 0) === 3 && s.tier !== 'Low').length },
+    { name: 'ST', value: students.filter(s => (s.caste_clean ?? 0) === 4 && s.tier !== 'Low').length },
   ];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
