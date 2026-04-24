@@ -41,13 +41,14 @@ export default function DistrictAnalyticsView({ schools }: { schools: School[] }
     const multiplier = timeframe === "all" ? 2.2 : 1;
     const mandals: Record<string, { name: string, flagged: number, students: number, risk: number, schools: number }> = {};
     schools.forEach(s => {
-      if (!mandals[s.mandal_name]) {
-        mandals[s.mandal_name] = { name: s.mandal_name, flagged: 0, students: 0, risk: 0, schools: 0 };
+      const key = s.mandal_name ?? "Unknown";
+      if (!mandals[key]) {
+        mandals[key] = { name: key, flagged: 0, students: 0, risk: 0, schools: 0 };
       }
-      mandals[s.mandal_name].flagged += Math.round(s.n_flagged * multiplier);
-      mandals[s.mandal_name].students += Math.round(s.n_students * multiplier);
-      mandals[s.mandal_name].risk += s.avg_risk;
-      mandals[s.mandal_name].schools += 1;
+      mandals[key].flagged += Math.round(s.n_flagged * multiplier);
+      mandals[key].students += Math.round(s.n_students * multiplier);
+      mandals[key].risk += s.avg_risk;
+      mandals[key].schools += 1;
     });
 
     return Object.values(mandals)

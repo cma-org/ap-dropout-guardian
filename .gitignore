@@ -21,6 +21,12 @@ web/.next/
 web/node_modules/
 web/public/data/
 
+# Allow Next.js app route folders named "data" (source code, not data files)
+!web/src/
+!web/src/app/
+!web/src/app/**/
+!web/src/**/data/
+
 # Misc
 .DS_Store
 *.log
