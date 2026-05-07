@@ -29,9 +29,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-6">
             {children}
           </main>
-          <footer className="text-center text-xs text-zinc-500 py-4 border-t border-zinc-200">
+          {/* <footer className="text-center text-xs text-zinc-500 py-4 border-t border-zinc-200">
             RTGS AI Hackathon — Confidential. Data: School Education Dept. DPDP-restricted fields shown as calibrated stand-ins.
-          </footer>
+          </footer> */}
         </div>
       </div>
       <FloatingChatbot />

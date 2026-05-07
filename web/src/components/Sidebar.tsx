@@ -41,7 +41,7 @@ export default function Sidebar() {
         nav.push({ href: "/dashboard/district/schools", label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
         nav.push({ href: "/dashboard/district/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
         nav.push({ href: "/dashboard/district/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
-        nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
+        nav.push({ href: "/dashboard/district/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
 
       // School Education Department — super admin, sees everything
