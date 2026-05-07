@@ -11,6 +11,7 @@ export interface School {
   n_flagged: number;
   avg_risk: number;
   pct_critical: number;
+  has_roster?: boolean;
 }
 
 export interface Mandal {

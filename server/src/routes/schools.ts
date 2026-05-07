@@ -13,9 +13,13 @@ router.get("/", async (req, res) => {
     const schools = await prisma.school.findMany({
       where,
       orderBy: { schoolName: "asc" },
+      include: { _count: { select: { rosterStudents: true } } },
     });
 
-    res.json(schools.map(transformSchool));
+    res.json(schools.map((s) => ({
+      ...transformSchool(s),
+      has_roster: s._count.rosterStudents > 0,
+    })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });

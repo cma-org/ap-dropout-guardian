@@ -152,14 +152,24 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
   }, [selectedId]);
 
   const filteredSchools = useMemo(() => {
-    if (!search) return schools;
-    const q = search.toLowerCase();
-    return schools.filter(
-      (s) =>
-        (s.school_name ?? "").toLowerCase().includes(q) ||
-        (s.district_name ?? "").toLowerCase().includes(q) ||
-        (s.mandal_name ?? "").toLowerCase().includes(q)
-    );
+    const base = search
+      ? schools.filter((s) => {
+          const q = search.toLowerCase();
+          return (
+            (s.school_name ?? "").toLowerCase().includes(q) ||
+            (s.district_name ?? "").toLowerCase().includes(q) ||
+            (s.mandal_name ?? "").toLowerCase().includes(q)
+          );
+        })
+      : schools;
+
+    return [...base].sort((a, b) => {
+      // Schools with real roster data come first
+      const rosterDiff = (b.has_roster ? 1 : 0) - (a.has_roster ? 1 : 0);
+      if (rosterDiff !== 0) return rosterDiff;
+      // Within each group sort by flagged count descending
+      return b.n_flagged - a.n_flagged;
+    });
   }, [schools, search]);
 
   const trendData = useMemo(() => {
