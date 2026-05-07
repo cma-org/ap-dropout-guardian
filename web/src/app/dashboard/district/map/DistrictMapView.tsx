@@ -346,7 +346,7 @@ function SchoolDetailPanel({
         {lang === "en" ? "View full school report" : "పూర్తి నివేదిక చూడండి"}
       </Link>
       <Link
-        href={`/dashboard/teacher?school=${school.school_id}`}
+        href={`/dashboard/district/schools?id=${school.school_id}#roster`}
         className="flex items-center justify-center gap-2 rounded-lg border border-zinc-300 text-zinc-700 text-sm font-medium py-2 mt-2 hover:bg-zinc-50 transition"
       >
         <ExternalLink className="h-4 w-4" />

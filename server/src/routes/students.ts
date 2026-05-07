@@ -53,7 +53,38 @@ router.get("/:childSno", async (req, res) => {
     });
 
     if (!student) {
-      res.status(404).json({ error: "Student not found" });
+      // Fallback: synthesize a partial profile from roster data
+      const roster = await prisma.rosterStudent.findFirst({
+        where: { childSno },
+        include: { school: true },
+      });
+      if (!roster) {
+        res.status(404).json({ error: "Student not found" });
+        return;
+      }
+      res.json({
+        child_sno: roster.childSno,
+        school_id: Number(roster.schoolId),
+        school_name: roster.school.schoolName,
+        district_name: roster.school.districtName,
+        mandal_name: roster.school.mandalName,
+        gender: roster.genderLabel === "Male" ? 1 : 2,
+        gender_label: roster.genderLabel,
+        caste_clean: roster.casteClean ?? 0,
+        age: null,
+        attendance_rate: roster.attendanceRate,
+        max_consec_absence: 0,
+        fa_avg: roster.faAvg,
+        sa_avg: null,
+        migration_flag: roster.migrationFlag ?? 0,
+        parent_literacy: 0,
+        family_income_bracket: roster.familyIncomeBracket ?? 0,
+        transport_allowance: 0,
+        risk_score: roster.riskScore,
+        tier: roster.tier,
+        drivers: [],
+        partial: true,
+      });
       return;
     }
 

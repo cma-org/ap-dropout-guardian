@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { School, RosterStudent, RiskTier } from "@/lib/types";
@@ -28,20 +28,23 @@ function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
 const MONTHS = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 function schoolTrend(n_flagged: number) {
   return MONTHS.map((month, i) => {
-    // Ensure the last month (current) exactly matches the actual flagged count
     const isLastMonth = i === MONTHS.length - 1;
+    // Deterministic attendance value seeded on n_flagged + month index — avoids SSR/client mismatch
+    const attendance = 85 + ((n_flagged * 31 + i * 17) % 100) / 10;
     return {
       month,
       flagged: isLastMonth ? n_flagged : Math.max(1, Math.round(n_flagged * (0.6 + Math.sin(i) * 0.2))),
-      attendance: 85 + Math.random() * 10,
+      attendance: Math.min(100, attendance),
     };
   });
 }
 
-function generateSimulatedRoster(school: School, existing: RosterStudent[] = []): RosterStudent[] {
-  const roster: RosterStudent[] = [...existing];
+type SimRosterStudent = RosterStudent & { _sim?: true };
+
+function generateSimulatedRoster(school: School, existing: RosterStudent[] = []): SimRosterStudent[] {
+  const roster: SimRosterStudent[] = [...existing];
   const tiers: RiskTier[] = ["Critical", "High", "Medium", "Low"];
-  
+
   // If we have no existing data, first simulate the flagged ones
   if (roster.length === 0 && school.n_flagged > 0) {
     for (let i = 0; i < school.n_flagged; i++) {
@@ -52,7 +55,8 @@ function generateSimulatedRoster(school: School, existing: RosterStudent[] = [])
         attendance_rate: 0.4 + Math.random() * 0.5,
         fa_avg: 40 + Math.random() * 100,
         risk_score: 0.6 + Math.random() * 0.35,
-        tier: tiers[tierIdx]
+        tier: tiers[tierIdx],
+        _sim: true,
       });
     }
   }
@@ -68,11 +72,12 @@ function generateSimulatedRoster(school: School, existing: RosterStudent[] = [])
         attendance_rate: 0.85 + Math.random() * 0.15,
         fa_avg: 120 + Math.random() * 80,
         risk_score: 0.01 + Math.random() * 0.15,
-        tier: "Low"
+        tier: "Low",
+        _sim: true,
       });
     }
   }
-  
+
   // Sort by risk score descending
   return roster.sort((a, b) => b.risk_score - a.risk_score);
 }
@@ -99,7 +104,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
     }
   }, [searchParams, lastUrlId]);
 
-  const [roster, setRoster] = useState<RosterStudent[] | null>(null);
+  const [roster, setRoster] = useState<SimRosterStudent[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
@@ -107,6 +112,13 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
   const [gradeFilter, setGradeFilter] = useState<number | "All">("All");
 
   const selected = schools.find((s) => s.school_id === selectedId);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!listRef.current || !selectedId) return;
+    const el = listRef.current.querySelector<HTMLElement>(`[data-school-id="${selectedId}"]`);
+    if (el) listRef.current.scrollTop = el.offsetTop - listRef.current.offsetTop;
+  }, [selectedId]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -230,10 +242,11 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
               />
             </div>
           </div>
-          <div className="overflow-auto flex-1 divide-y divide-zinc-100">
+          <div ref={listRef} className="overflow-auto flex-1 divide-y divide-zinc-100">
             {filteredSchools.map((s) => (
               <button
                 key={s.school_id}
+                data-school-id={s.school_id}
                 onClick={() => setSelectedId(s.school_id)}
                 className={cn(
                   "w-full text-left px-4 py-3 hover:bg-zinc-50 transition-colors",
@@ -451,9 +464,13 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
                           {filtered.slice(0, 200).map((r) => (
                             <tr key={r.child_sno} className="border-t border-zinc-100 hover:bg-zinc-50 transition-colors">
                               <td className="py-2 pr-4">
-                                <Link href={`/student/${r.child_sno}`} className="text-[color:var(--ap-navy)] hover:underline font-bold">
-                                  {r.child_sno}
-                                </Link>
+                                {r._sim ? (
+                                  <span className="text-zinc-400 font-bold">{r.child_sno}</span>
+                                ) : (
+                                  <Link href={`/student/${r.child_sno}`} className="text-[color:var(--ap-navy)] hover:underline font-bold">
+                                    {r.child_sno}
+                                  </Link>
+                                )}
                               </td>
                               <td className="py-2 px-3 text-zinc-600 font-medium">{r.grade}th</td>
                               <td className="py-2 px-3 text-zinc-600">{r.gender_label}</td>

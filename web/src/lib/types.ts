@@ -67,6 +67,8 @@ export interface StudentDetail {
   risk_score: number;
   tier: RiskTier;
   drivers: Driver[];
+  /** True when only roster-level data is available — full risk analysis is absent */
+  partial?: boolean;
 }
 
 export interface Metrics {

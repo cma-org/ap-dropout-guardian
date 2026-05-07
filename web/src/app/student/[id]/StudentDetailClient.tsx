@@ -248,6 +248,23 @@ export default function StudentDetailClient({
         </button>
       </div>
 
+      {/* Partial profile banner */}
+      {student.partial && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <div className="text-sm font-semibold text-amber-800">
+              {lang === "en" ? "Limited profile — roster data only" : "పరిమిత ప్రొఫైల్ — రోస్టర్ డేటా మాత్రమే"}
+            </div>
+            <div className="text-xs text-amber-700 mt-0.5">
+              {lang === "en"
+                ? "Full risk analysis is not yet available for this student. Attendance and basic details are shown from the class roster."
+                : "ఈ విద్యార్థికి పూర్తి ప్రమాద విశ్లేషణ ఇంకా అందుబాటులో లేదు. తరగతి రోస్టర్ నుండి హాజరు మరియు ప్రాథమిక వివరాలు చూపబడ్డాయి."}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header: ID + risk gauge */}
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden relative">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[color:var(--ap-navy)]/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
@@ -360,18 +377,34 @@ export default function StudentDetailClient({
           </div>
           
           <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[350px]">
-            {(() => {
-              const maxC = Math.max(...student.drivers.map(d => Math.abs(d.contrib)), 0.001);
-              return student.drivers.map((d, i) => (
-                <DriverItem key={i} driver={d} lang={lang} pct={Math.round((Math.abs(d.contrib) / maxC) * 100)} />
-              ));
-            })()}
+            {student.drivers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                <AlertCircle className="h-8 w-8 text-zinc-300" />
+                <div className="text-sm font-medium text-zinc-500">
+                  {lang === "en" ? "Risk analysis not available" : "ప్రమాద విశ్లేషణ అందుబాటులో లేదు"}
+                </div>
+                <div className="text-xs text-zinc-400 max-w-[220px]">
+                  {lang === "en"
+                    ? "This student was identified from the class roster. Run a full risk assessment to see contributing factors."
+                    : "ఈ విద్యార్థి తరగతి రోస్టర్ నుండి గుర్తించబడ్డారు. కారణాలు చూడటానికి పూర్తి ప్రమాద మూల్యాంకనం నడపండి."}
+                </div>
+              </div>
+            ) : (
+              (() => {
+                const maxC = Math.max(...student.drivers.map(d => Math.abs(d.contrib)), 0.001);
+                return student.drivers.map((d, i) => (
+                  <DriverItem key={i} driver={d} lang={lang} pct={Math.round((Math.abs(d.contrib) / maxC) * 100)} />
+                ));
+              })()
+            )}
           </div>
 
-          <div className="mt-6 pt-6 border-t border-zinc-100">
-            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">{lang === "en" ? "Risk Factor Impact Analysis" : "ప్రమాద కారకాల ప్రభావ విశ్లేషణ"}</div>
-            <RiskFactorChart drivers={student.drivers} lang={lang as "en" | "te"} />
-          </div>
+          {student.drivers.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-zinc-100">
+              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">{lang === "en" ? "Risk Factor Impact Analysis" : "ప్రమాద కారకాల ప్రభావ విశ్లేషణ"}</div>
+              <RiskFactorChart drivers={student.drivers} lang={lang as "en" | "te"} />
+            </div>
+          )}
         </section>
       </div>
 
