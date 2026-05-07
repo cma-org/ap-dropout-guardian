@@ -32,3 +32,5 @@ web/public/data/
 *.log
 .env
 .env.local
+features.md
+feature_checklist.md
