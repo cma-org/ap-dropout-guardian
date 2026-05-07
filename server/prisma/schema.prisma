@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum RiskTier {
+  Critical
+  High
+  Medium
+  Low
+}
+
+enum Role {
+  teacher
+  hm
+  district
+  sed
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String
+  role       Role
+  schoolId   BigInt?
+  schoolName String?
+  district   String?
+  createdAt  DateTime @default(now())
+
+  interventions Intervention[]
+}
+
+model District {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
+model School {
+  schoolId     BigInt  @id
+  schoolName   String?
+  districtName String?
+  mandalName   String?
+  latitude     Float?
+  longitude    Float?
+  nStudents    Int
+  nFlagged     Int
+  avgRisk      Float
+  pctCritical  Float
+
+  rosterStudents RosterStudent[]
+  students       StudentDetail[]
+}
+
+model Mandal {
+  id           Int     @id @default(autoincrement())
+  mandalName   String?
+  districtName String?
+  nStudents    Int
+  nFlagged     Int
+  avgRisk      Float
+  latitude     Float?
+  longitude    Float?
+
+  @@unique([mandalName, districtName])
+}
+
+model StudentDetail {
+  childSno            Int      @id
+  schoolId            BigInt
+  schoolName          String?
+  districtName        String?
+  mandalName          String?
+  gender              Int
+  genderLabel         String
+  casteClean          Int
+  age                 Int?
+  attendanceRate      Float
+  maxConsecAbsence    Int
+  faAvg               Float?
+  saAvg               Float?
+  migrationFlag       Int
+  parentLiteracy      Int
+  familyIncomeBracket Int
+  transportAllowance  Int
+  riskScore           Float
+  tier                RiskTier
+
+  school        School         @relation(fields: [schoolId], references: [schoolId])
+  drivers       Driver[]
+  interventions Intervention[]
+}
+
+model Driver {
+  id         Int    @id @default(autoincrement())
+  childSno   Int
+  feature    String
+  labelEn    String
+  labelTe    String
+  contrib    Float
+  value      Float?
+  sentenceEn String @db.Text
+  sentenceTe String @db.Text
+
+  student StudentDetail @relation(fields: [childSno], references: [childSno])
+}
+
+model RosterStudent {
+  id                  Int      @id @default(autoincrement())
+  childSno            Int
+  schoolId            BigInt
+  genderLabel         String
+  attendanceRate      Float
+  faAvg               Float?
+  riskScore           Float
+  tier                RiskTier
+  grade               Int?
+  migrationFlag       Int?
+  casteClean          Int?
+  familyIncomeBracket Int?
+
+  school School @relation(fields: [schoolId], references: [schoolId])
+
+  @@unique([childSno, schoolId])
+}
+
+model Metrics {
+  id                Int    @id @default(autoincrement())
+  version           String @unique @default("default")
+  threshold         Float
+  thresholdCurrent  Float?
+  trainData         Json
+  testOotData       Json
+  fairnessData      Json
+  featureImportance Json
+  prCurve           Json
+  tierCounts        Json
+}
+
+model CounsellorTemplate {
+  id              Int    @id @default(autoincrement())
+  key             String @unique
+  parentSmsEn     String @db.Text
+  parentSmsTe     String @db.Text
+  teacherScriptEn String @db.Text
+  teacherScriptTe String @db.Text
+  schemes         Json
+}
+
+model Intervention {
+  id          Int       @id @default(autoincrement())
+  childSno    Int
+  actionType  String
+  status      String    @default("pending")
+  assignedTo  String
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdBy   Int?
+
+  student StudentDetail @relation(fields: [childSno], references: [childSno])
+  user    User?         @relation(fields: [createdBy], references: [id])
+}
