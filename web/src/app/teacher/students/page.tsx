@@ -4,15 +4,37 @@ import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
 import type { RosterStudent } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
-import { pctFormat, fmtInt, cn } from "@/lib/utils";
+import { pctFormat, cn } from "@/lib/utils";
 import Link from "next/link";
-import { Search, Filter, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Download, ChevronLeft, ChevronRight, Plane, Bus } from "lucide-react";
+
+// Deterministic mock for fields not stored at roster level — same hash as TeacherDashboard
+function rosterExtras(child_sno: number) {
+  const h1 = Math.imul(child_sno, 2654435761) >>> 0;
+  const h2 = Math.imul(h1 ^ (h1 >>> 16), 2246822519) >>> 0;
+  const h3 = Math.imul(h2 ^ (h2 >>> 13), 3266489917) >>> 0;
+  return {
+    grade:              6 + (h1 % 5),
+    migration_flag:     (h2 % 7) === 0 ? 1 : 0,
+    transport_allowance:(h3 % 4) === 0 ? 1 : 0,
+  };
+}
 
 function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
-  const header = "child_sno,grade,gender,attendance_rate,fa_avg,risk_score,tier";
-  const rows = roster.map((r) =>
-    [r.child_sno, r.grade || "", r.gender_label, r.attendance_rate.toFixed(3), r.fa_avg ?? "", r.risk_score.toFixed(4), r.tier].join(",")
-  );
+  const header = "child_sno,grade,gender,attendance_rate,fa_avg,risk_score,tier,migration,transport";
+  const rows = roster.map((r) => {
+    const e = rosterExtras(r.child_sno);
+    return [
+      r.child_sno, r.grade || "",
+      r.gender_label,
+      r.attendance_rate.toFixed(3),
+      r.fa_avg ?? "",
+      r.risk_score.toFixed(4),
+      r.tier,
+      (r.migration_flag ?? e.migration_flag) ? "Yes" : "No",
+      ((r as any).transport_allowance ?? e.transport_allowance) ? "Yes" : "No",
+    ].join(",");
+  });
   const csv = [header, ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -39,12 +61,11 @@ export default function StudentsListPage() {
       fetch(`/data/roster/${user.schoolId}.json`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
-          // Simulate grades 6-10 if not present
-          const withGrades = data.map((s: any, i: number) => ({
+          const withExtras = data.map((s: any) => ({
             ...s,
-            grade: s.grade || (6 + (i % 5))
+            grade: s.grade || rosterExtras(s.child_sno).grade,
           }));
-          setStudents(withGrades);
+          setStudents(withExtras);
           setLoading(false);
         });
     }
@@ -159,45 +180,116 @@ export default function StudentsListPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-zinc-50 text-zinc-500 font-medium border-b border-zinc-100">
-                <th className="px-6 py-3">{lang === "en" ? "Student ID" : "విద్యార్థి ID"}</th>
-                <th className="px-6 py-3">{T.student.grade[lang]}</th>
-                <th className="px-6 py-3">{T.student.gender[lang]}</th>
-                <th className="px-6 py-3">{T.student.attendance[lang]}</th>
-                <th className="px-6 py-3">{T.student.marks[lang]}</th>
-                <th className="px-6 py-3">{T.student.riskScore[lang]}</th>
-                <th className="px-6 py-3">{lang === "en" ? "Status" : "స్థితి"}</th>
+              <tr className="bg-zinc-50 border-b border-zinc-100">
+                {[
+                  lang === "en" ? "Student ID"      : "విద్యార్థి ID",
+                  T.student.grade[lang],
+                  T.student.gender[lang],
+                  lang === "en" ? "Attendance"      : "హాజరు",
+                  lang === "en" ? "FA Marks"        : "FA మార్కులు",
+                  lang === "en" ? "Dropout Risk"    : "డ్రాపౌట్ ప్రమాదం",
+                  lang === "en" ? "Migration"       : "వలస",
+                  lang === "en" ? "Transport"       : "రవాణా",
+                  lang === "en" ? "Status"          : "స్థితి",
+                ].map((h) => (
+                  <th key={h} className="px-5 py-3 text-left text-[11px] font-bold text-zinc-400 uppercase tracking-wider whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={6} className="px-6 py-4"><div className="h-4 bg-zinc-100 rounded w-full"></div></td>
+                    <td colSpan={9} className="px-5 py-4"><div className="h-4 bg-zinc-100 rounded w-full" /></td>
                   </tr>
                 ))
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">{T.teacherView.noStudentsFound[lang]}</td>
+                  <td colSpan={9} className="px-5 py-12 text-center text-zinc-500">{T.teacherView.noStudentsFound[lang]}</td>
                 </tr>
               ) : (
-                paginated.map(s => (
-                  <tr key={s.child_sno} className="hover:bg-zinc-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <Link href={`/student/${s.child_sno}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline">
-                        {s.child_sno}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-zinc-600">{s.grade}th</td>
-                    <td className="px-6 py-4 text-zinc-600">{s.gender_label}</td>
-                    <td className="px-6 py-4 tabular-nums">{pctFormat(s.attendance_rate, 0)}</td>
-                    <td className="px-6 py-4 tabular-nums">{s.fa_avg?.toFixed(0) || "—"}</td>
-                    <td className="px-6 py-4 font-medium tabular-nums">{pctFormat(s.risk_score, 0)}</td>
-                    <td className="px-6 py-4">
-                      <RiskBadge tier={s.tier} />
-                    </td>
-                  </tr>
-                ))
+                paginated.map(s => {
+                  const e = rosterExtras(s.child_sno);
+                  const migrationFlag      = s.migration_flag      ?? e.migration_flag;
+                  const transportAllowance = (s as any).transport_allowance ?? e.transport_allowance;
+                  const attColor = s.attendance_rate < 0.5 ? "text-red-600" : s.attendance_rate < 0.75 ? "text-amber-600" : "text-emerald-600";
+                  return (
+                    <tr key={s.child_sno} className="hover:bg-zinc-50/60 transition-colors border-b border-zinc-100 last:border-0">
+                      {/* Student ID */}
+                      <td className="px-5 py-3.5">
+                        <Link href={`/student/${s.child_sno}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline tabular-nums">
+                          {s.child_sno}
+                        </Link>
+                      </td>
+
+                      {/* Grade */}
+                      <td className="px-5 py-3.5 text-zinc-600">
+                        {s.grade}<span className="text-zinc-400 text-xs">th</span>
+                      </td>
+
+                      {/* Gender */}
+                      <td className="px-5 py-3.5 text-zinc-600">{s.gender_label}</td>
+
+                      {/* Attendance */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("tabular-nums font-semibold text-sm w-10 shrink-0", attColor)}>
+                            {Math.round(s.attendance_rate * 100)}%
+                          </span>
+                          <div className="w-16 h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                            <div className="h-full rounded-full" style={{
+                              width: `${Math.round(s.attendance_rate * 100)}%`,
+                              backgroundColor: s.attendance_rate < 0.5 ? "#dc2626" : s.attendance_rate < 0.75 ? "#f97316" : "#16a34a",
+                            }} />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* FA Marks */}
+                      <td className="px-5 py-3.5 tabular-nums text-zinc-700">
+                        {s.fa_avg != null
+                          ? <>{s.fa_avg.toFixed(0)}<span className="text-zinc-400 text-xs ml-0.5">/ 300</span></>
+                          : <span className="text-zinc-300">—</span>}
+                      </td>
+
+                      {/* Risk score */}
+                      <td className="px-5 py-3.5 tabular-nums font-semibold text-zinc-800">
+                        {pctFormat(s.risk_score, 0)}
+                      </td>
+
+                      {/* Migration */}
+                      <td className="px-5 py-3.5">
+                        {migrationFlag ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 whitespace-nowrap">
+                            <Plane className="h-3 w-3 shrink-0" />
+                            {lang === "en" ? "Migrant" : "వలస"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-zinc-400">{lang === "en" ? "No" : "లేదు"}</span>
+                        )}
+                      </td>
+
+                      {/* Transport */}
+                      <td className="px-5 py-3.5">
+                        {transportAllowance ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-sky-100 text-sky-700 border border-sky-200 px-2 py-0.5 whitespace-nowrap">
+                            <Bus className="h-3 w-3 shrink-0" />
+                            {lang === "en" ? "Allowed" : "మంజూరు"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-zinc-400">{lang === "en" ? "No" : "లేదు"}</span>
+                        )}
+                      </td>
+
+                      {/* Status badge */}
+                      <td className="px-5 py-3.5">
+                        <RiskBadge tier={s.tier} />
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

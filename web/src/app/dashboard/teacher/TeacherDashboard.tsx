@@ -11,7 +11,7 @@ import RiskBadge from "@/components/RiskBadge";
 import StudentAnalyticsPanel from "@/components/StudentAnalyticsPanel";
 import {
   Bell, AlertTriangle, TrendingDown, Users, CheckCircle2,
-  ArrowUpRight, ChevronRight, Activity,
+  ArrowUpRight, ChevronRight, Activity, Plane, Bus,
 } from "lucide-react";
 import InfoTooltip from "@/components/InfoTooltip";
 import {
@@ -19,6 +19,19 @@ import {
 } from "recharts";
 
 const MONTHS = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+
+// Deterministic mock values for roster fields not stored at roster level.
+// Uses a Knuth multiplicative hash so the same child_sno always gives the same result.
+function rosterExtras(child_sno: number) {
+  const h1 = Math.imul(child_sno, 2654435761) >>> 0;
+  const h2 = Math.imul(h1 ^ (h1 >>> 16), 2246822519) >>> 0;
+  const h3 = Math.imul(h2 ^ (h2 >>> 13), 3266489917) >>> 0;
+  return {
+    grade: 6 + (h1 % 5),                          // 6 – 10
+    migration_flag: (h2 % 7) === 0 ? 1 : 0,       // ~14 % migrant
+    transport_allowance: (h3 % 4) === 0 ? 1 : 0,  // ~25 % with allowance
+  };
+}
 
 function makeTrend(roster: RosterStudent[]) {
   const base = roster.reduce((s, r) => s + r.attendance_rate, 0) / Math.max(roster.length, 1);
@@ -137,58 +150,163 @@ export default function TeacherDashboard({
       <StudentAnalyticsPanel roster={roster} />
 
       {/* Roster */}
-      <div className="rounded-xl border bg-white">
+      <div className="rounded-xl border bg-white overflow-hidden">
+        {/* Header bar */}
         <div className="px-5 py-4 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-semibold text-zinc-800">{T.teacherDashboard.rosterTitle[lang]}</h2>
           <div className="flex gap-1.5 flex-wrap">
             {([T.common.filter[lang], "Critical", "High", "Medium", "Low"] as const).map((t, idx) => {
               const realTier = idx === 0 ? "All" : t;
               return (
-              <button
-                key={t}
-                onClick={() => setFilter(realTier as RiskTier | "All")}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium transition",
-                  filter === realTier
-                    ? realTier === "All" ? "bg-zinc-900 text-white" : TIER_COLORS[realTier as RiskTier]
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                )}
-              >
-                {idx === 0 ? T.common.filter[lang] : T.tier[realTier as RiskTier][lang]} {realTier !== "All" && `(${roster.filter((r) => r.tier === realTier).length})`}
-              </button>
-            )})}
+                <button
+                  key={t}
+                  onClick={() => setFilter(realTier as RiskTier | "All")}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium transition",
+                    filter === realTier
+                      ? realTier === "All" ? "bg-zinc-900 text-white" : TIER_COLORS[realTier as RiskTier]
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  )}
+                >
+                  {idx === 0 ? T.common.filter[lang] : T.tier[realTier as RiskTier][lang]}
+                  {realTier !== "All" && ` (${roster.filter((r) => r.tier === realTier).length})`}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="divide-y divide-zinc-100">
-          {displayed.slice(0, 30).map((s) => (
-            <Link
-              key={s.child_sno}
-              href={`/student/${s.child_sno}`}
-              className={cn(
-                "flex items-center gap-3 px-5 py-3 hover:bg-zinc-50 transition group",
-                TIER_BG_SOFT[s.tier]
-              )}
-            >
-              <div className="tabular-nums text-sm font-mono text-zinc-500 w-20 shrink-0">#{s.child_sno}</div>
-              <RiskBadge tier={s.tier} size="sm" />
-              <div className="flex-1 grid grid-cols-3 gap-2 text-sm text-zinc-700">
-                <span>{s.gender_label}</span>
-                <span className={s.attendance_rate < 0.5 ? "text-red-600 font-medium" : ""}>{pctFormat(s.attendance_rate, 0)} {T.common.attShort[lang]}</span>
-                <span>{s.fa_avg !== null ? `${s.fa_avg.toFixed(0)} ${T.common.marksShort[lang]}` : "—"}</span>
-              </div>
-              {loggedSet.has(s.child_sno) ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-500 shrink-0" />
-              )}
-            </Link>
-          ))}
-          {displayed.length > 30 && (
-            <div className="px-5 py-3 text-sm text-zinc-500 text-center">
-              {T.teacherDashboard.showingTop[lang].replace("{count}", displayed.length.toString())}. <Link href="/teacher/students" className="text-[color:var(--ap-navy)] underline">{T.teacherDashboard.seeFullRoster[lang]} →</Link>
-            </div>
-          )}
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-zinc-50 border-b border-zinc-100">
+                {[
+                  { label: lang === "en" ? "Student ID"  : "విద్యార్థి ID", w: "w-28" },
+                  { label: lang === "en" ? "Risk Tier"   : "ప్రమాద స్థాయి", w: "w-32" },
+                  { label: lang === "en" ? "Gender"      : "లింగం",         w: "w-20" },
+                  { label: lang === "en" ? "Grade"       : "తరగతి",         w: "w-16" },
+                  { label: lang === "en" ? "Attendance"  : "హాజరు",         w: "w-40" },
+                  { label: lang === "en" ? "FA Marks"    : "FA మార్కులు",    w: "w-28" },
+                  { label: lang === "en" ? "Migration"   : "వలస",           w: "w-28" },
+                  { label: lang === "en" ? "Transport"   : "రవాణా",         w: "w-28" },
+                  { label: "",                                               w: "w-8"  },
+                ].map(({ label, w }) => (
+                  <th key={label} className={cn("px-4 py-2.5 text-left text-[10px] font-bold text-zinc-400 uppercase tracking-wider whitespace-nowrap", w)}>
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayed.slice(0, 30).map((s) => {
+                const extras = rosterExtras(s.child_sno);
+                const grade             = s.grade             ?? extras.grade;
+                const migrationFlag     = s.migration_flag    ?? extras.migration_flag;
+                const transportAllowance = (s as any).transport_allowance ?? extras.transport_allowance;
+                const attPct  = Math.round(s.attendance_rate * 100);
+                const attColor = s.attendance_rate < 0.5 ? "#dc2626" : s.attendance_rate < 0.75 ? "#f97316" : "#16a34a";
+
+                return (
+                  <tr
+                    key={s.child_sno}
+                    onClick={() => router.push(`/student/${s.child_sno}`)}
+                    className={cn(
+                      "cursor-pointer border-b border-zinc-100 last:border-0 transition-colors group",
+                      "hover:brightness-95",
+                      TIER_BG_SOFT[s.tier]
+                    )}
+                  >
+                    {/* Student ID */}
+                    <td className="px-4 py-3">
+                      <span className="tabular-nums font-mono text-[13px] font-semibold text-[color:var(--ap-navy)]">
+                        #{s.child_sno}
+                      </span>
+                    </td>
+
+                    {/* Risk tier */}
+                    <td className="px-4 py-3">
+                      <RiskBadge tier={s.tier} size="sm" />
+                    </td>
+
+                    {/* Gender */}
+                    <td className="px-4 py-3 text-zinc-600 text-[13px]">{s.gender_label}</td>
+
+                    {/* Grade */}
+                    <td className="px-4 py-3">
+                      <span className="text-[13px] font-medium text-zinc-700">{grade}
+                        <span className="text-[11px] text-zinc-400">th</span>
+                      </span>
+                    </td>
+
+                    {/* Attendance */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[13px] font-bold tabular-nums w-9 shrink-0" style={{ color: attColor }}>
+                          {attPct}%
+                        </span>
+                        <div className="flex-1 h-1.5 rounded-full bg-zinc-200 overflow-hidden min-w-[60px] max-w-[80px]">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${attPct}%`, backgroundColor: attColor }} />
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* FA Marks */}
+                    <td className="px-4 py-3">
+                      {s.fa_avg != null ? (
+                        <span className="tabular-nums text-[13px] font-medium text-zinc-700">
+                          {s.fa_avg.toFixed(0)}
+                          <span className="text-[11px] text-zinc-400 ml-0.5">/ 300</span>
+                        </span>
+                      ) : (
+                        <span className="text-zinc-300 text-sm">—</span>
+                      )}
+                    </td>
+
+                    {/* Migration */}
+                    <td className="px-4 py-3">
+                      {migrationFlag ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 whitespace-nowrap">
+                          <Plane className="h-3 w-3 shrink-0" />
+                          {lang === "en" ? "Migrant" : "వలస"}
+                        </span>
+                      ) : (
+                        <span className="text-[12px] text-zinc-400">{lang === "en" ? "No" : "లేదు"}</span>
+                      )}
+                    </td>
+
+                    {/* Transport */}
+                    <td className="px-4 py-3">
+                      {transportAllowance ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-sky-100 text-sky-700 border border-sky-200 px-2 py-0.5 whitespace-nowrap">
+                          <Bus className="h-3 w-3 shrink-0" />
+                          {lang === "en" ? "Allowed" : "మంజూరు"}
+                        </span>
+                      ) : (
+                        <span className="text-[12px] text-zinc-400">{lang === "en" ? "No" : "లేదు"}</span>
+                      )}
+                    </td>
+
+                    {/* Arrow */}
+                    <td className="px-4 py-3 text-right">
+                      {loggedSet.has(s.child_sno) ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 inline-block" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-500 inline-block" />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
+
+        {displayed.length > 30 && (
+          <div className="px-5 py-3 text-sm text-zinc-500 text-center border-t border-zinc-100">
+            {T.teacherDashboard.showingTop[lang].replace("{count}", displayed.length.toString())}. <Link href="/teacher/students" className="text-[color:var(--ap-navy)] underline">{T.teacherDashboard.seeFullRoster[lang]} →</Link>
+          </div>
+        )}
       </div>
 
       {/* Quick actions */}
