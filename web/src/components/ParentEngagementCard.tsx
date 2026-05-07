@@ -16,7 +16,7 @@ const PARENT_NAMES = ["Ramaiah", "Subbaiah", "Venkatesh", "Krishnaiah", "Narasim
 
 function mockFromId(childSno: number) {
   const h = (childSno * 2654435761) >>> 0;
-  const phone = `+91 ${9000000000 + (h % 900000000)}`;
+  const phone = "+91 8309114965";
   const distanceKm = 1 + (h % 14) + ((h >> 4) % 10) / 10;
   const rationCard = h % 3 !== 0;
   const volunteerIdx = h % VOLUNTEERS.length;

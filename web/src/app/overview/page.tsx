@@ -19,10 +19,10 @@ export default async function OverviewPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricCard label="Recall" value={pctFormat(t.recall, 1)} sub="Share of dropouts caught" tone={t.recall >= 0.80 ? "good" : "warn"} />
-        <MetricCard label="Precision" value={pctFormat(t.precision, 1)} sub="Of flagged, how many are real" tone={t.precision >= 0.20 ? "good" : "warn"} />
-        <MetricCard label="PR-AUC" value={t.pr_auc.toFixed(3)} sub="Model ranking quality" />
-        <MetricCard label="ROC-AUC" value={t.roc_auc.toFixed(3)} sub="Overall separability" />
+        <MetricCard label="Recall" value={pctFormat(t.recall, 1)} sub="Share of dropouts caught" tone={t.recall >= 0.80 ? "good" : "warn"} info="True positive rate: share of actual dropouts correctly flagged. RTGS criterion: exclusion error <20% requires recall >80%. Primary success gate for this PoC." />
+        <MetricCard label="Precision" value={pctFormat(t.precision, 1)} sub="Of flagged, how many are real" tone={t.precision >= 0.20 ? "good" : "warn"} info="Of all students flagged at-risk, the fraction who are true dropouts. RTGS criterion: inclusion error <80% means precision must exceed 20%. Teachers de-escalate false positives easily." />
+        <MetricCard label="Dropout Ranking Score" value={t.pr_auc.toFixed(3)} sub="How well the model ranks true dropouts" info="Precision-Recall score (PR-AUC). Measures how accurately the model ranks at-risk students above safe ones. Higher is better. Designed for datasets where dropouts are rare — only 1.3% of students." />
+        <MetricCard label="Overall Model Score" value={t.roc_auc.toFixed(3)} sub="Separates at-risk from safe students" info="Discrimination score (ROC-AUC). Measures the model's overall ability to tell dropout-risk students apart from safe ones. 0.5 = random guess, 1.0 = perfect. Our 0.94 means the model is highly reliable." />
       </div>
 
       <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 flex gap-3 items-start">

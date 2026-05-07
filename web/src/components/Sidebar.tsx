@@ -36,10 +36,17 @@ export default function Sidebar() {
         nav.push({ href: "/hm/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
       }
 
-      // District Heatmap - ONLY for district officer and above (rtgs)
-      if (user.role === "district" || user.role === "rtgs") {
+      // District Heatmap - ONLY for district officer
+      if (user.role === "district") {
         nav.push({ href: "/dashboard/district/schools", label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
         nav.push({ href: "/dashboard/district/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
+        nav.push({ href: "/dashboard/district/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
+        nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
+      }
+
+      // School Education Department — super admin, sees everything
+      if (user.role === "sed") {
+        nav.push({ href: "/dashboard/district/schools", label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
         nav.push({ href: "/dashboard/district/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
         nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
@@ -47,10 +54,8 @@ export default function Sidebar() {
       // Model Overview is analytics
       nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
     } else {
-      // Guest users see Home, Overview and Map
+      // Guests only see Home
       nav.push({ href: "/", label: T.common.home[lang], icon: <Home className="h-4 w-4" /> });
-      nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
-      nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
     }
 
     return nav;

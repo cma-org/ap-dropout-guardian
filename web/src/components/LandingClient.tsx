@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
-import { Shield, Brain, RefreshCw, ArrowRight, Lock } from "lucide-react";
+import { Brain, BarChart2, Plug, Users, ArrowRight, Lock } from "lucide-react";
 import { useLang, T } from "@/lib/i18n";
 import { fmtInt, pctFormat } from "@/lib/utils";
+import InfoTooltip from "./InfoTooltip";
 
 type Props = {
   recall: number;
@@ -14,7 +15,7 @@ const CREDENTIALS = [
   { role: "Teacher", roleTE: "ఉపాధ్యాయుడు", email: "teacher@zphs.ap.gov.in", password: "teacher123" },
   { role: "Head Master", roleTE: "ప్రధానోపాధ్యాయుడు", email: "principal@zphs.ap.gov.in", password: "hm123" },
   { role: "District Officer", roleTE: "జిల్లా అధికారి", email: "deo@ntr.ap.gov.in", password: "district123" },
-  { role: "RTGS Admin", roleTE: "RTGS అడ్మిన్", email: "admin@rtgs.ap.gov.in", password: "rtgs123" },
+  { role: "School Education Dept.", roleTE: "పాఠశాల విద్యా శాఖ", email: "director@apsed.ap.gov.in", password: "sed123" },
 ];
 
 export default function LandingClient({ recall, precision, criticalCount }: Props) {
@@ -29,9 +30,10 @@ export default function LandingClient({ recall, precision, criticalCount }: Prop
   ];
 
   const pillars = [
-    { icon: <Brain className="h-7 w-7 text-[color:var(--ap-navy)]" />, title: t.hyper[lang], body: t.hyperBody[lang] },
-    { icon: <Shield className="h-7 w-7 text-[color:var(--ap-orange)]" />, title: t.genai[lang], body: t.genaiBody[lang] },
-    { icon: <RefreshCw className="h-7 w-7 text-[color:var(--ap-green)]" />, title: t.closed[lang], body: t.closedBody[lang] },
+    { icon: <Brain className="h-7 w-7 text-[color:var(--ap-navy)]" />, title: t.pillar1[lang], body: t.pillar1Body[lang], info: "XGBoost trained on 4 government data streams: school attendance, FA/SA marks, GSWS socio-economic data, and migration flags. Recall ≥80% on 2024-25 out-of-time test. SHAP TreeExplainer generates per-student factor rankings." },
+    { icon: <BarChart2 className="h-7 w-7 text-[color:var(--ap-orange)]" />, title: t.pillar2[lang], body: t.pillar2Body[lang], info: "Four risk tiers: Critical (≥85%), High (65–85%), Medium (51–65%), Low (<51%). Dashboards scoped by role — teacher sees class, HM sees school, District Officer sees mandal aggregates, RTGS Admin sees state-wide view." },
+    { icon: <Plug className="h-7 w-7 text-violet-600" />, title: t.pillar3[lang], body: t.pillar3Body[lang], info: "REST push endpoint sends risk scores and tier assignments to LEAP per student. Field interventions logged by teachers sync back to the model retraining pipeline. Demo uses a mock endpoint; production uses AP LEAP OAuth2." },
+    { icon: <Users className="h-7 w-7 text-[color:var(--ap-green)]" />, title: t.pillar4[lang], body: t.pillar4Body[lang], info: "Ward volunteers assigned from GSWS household survey data. Parent outreach via WhatsApp with Claude-generated bilingual scripts. Contact log creates audit trail and feeds the closed-loop outcome tracker for model retraining." },
   ];
 
   const steps = [
@@ -46,9 +48,6 @@ export default function LandingClient({ recall, precision, criticalCount }: Prop
     <div className="space-y-12">
       {/* Hero */}
       <section className="text-center py-12 space-y-4">
-        <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-full px-4 py-1.5 text-sm font-medium">
-          {t.badge[lang]}
-        </div>
         <h1 className="text-4xl md:text-5xl font-bold text-zinc-900 leading-tight">
           {t.title[lang]}
         </h1>
@@ -82,14 +81,17 @@ export default function LandingClient({ recall, precision, criticalCount }: Prop
         ))}
       </section>
 
-      {/* Three pillars */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Four pillars */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {pillars.map((p) => (
           <div key={p.title} className="rounded-xl border bg-white p-6 space-y-3">
             <div className="h-12 w-12 rounded-xl bg-zinc-50 border flex items-center justify-center">
               {p.icon}
             </div>
-            <h3 className="font-semibold text-zinc-900">{p.title}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-semibold text-zinc-900 flex-1">{p.title}</h3>
+              <InfoTooltip text={p.info} />
+            </div>
             <p className="text-sm text-zinc-600 leading-relaxed">{p.body}</p>
           </div>
         ))}

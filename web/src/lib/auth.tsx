@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type Role = "teacher" | "hm" | "district" | "rtgs";
+export type Role = "teacher" | "hm" | "district" | "sed";
 
 export interface UserSession {
   email: string;
@@ -42,11 +42,11 @@ export const DUMMY_USERS: Record<string, UserSession & { password: string }> = {
     name: "V. Lakshmipathi",
     district: DEMO_DISTRICT,
   },
-  "admin@rtgs.ap.gov.in": {
-    email: "admin@rtgs.ap.gov.in",
-    password: "rtgs123",
-    role: "rtgs",
-    name: "RTGS Admin",
+  "director@apsed.ap.gov.in": {
+    email: "director@apsed.ap.gov.in",
+    password: "sed123",
+    role: "sed",
+    name: "R. Satyanarayana",
   },
 };
 
@@ -54,32 +54,35 @@ export const ROLE_LABELS: Record<Role, string> = {
   teacher: "Teacher",
   hm: "Head Master",
   district: "District Officer",
-  rtgs: "RTGS Admin",
+  sed: "School Education Dept.",
 };
 
 export const ROLE_DASHBOARD: Record<Role, string> = {
   teacher: "/dashboard/teacher",
   hm: "/dashboard/hm",
   district: "/dashboard/district",
-  rtgs: "/dashboard/rtgs",
+  sed: "/dashboard/sed",
 };
 
 interface AuthCtx {
   user: UserSession | null;
+  isInitialized: boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
 }
 
-const Ctx = createContext<AuthCtx>({ user: null, login: () => false, logout: () => {} });
+const Ctx = createContext<AuthCtx>({ user: null, isInitialized: false, login: () => false, logout: () => {} });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem("auth_session");
       if (raw) setUser(JSON.parse(raw) as UserSession);
     } catch { /* ignore */ }
+    setIsInitialized(true);
   }, []);
 
   const login = (email: string, password: string): boolean => {
@@ -96,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("auth_session");
   };
 
-  return <Ctx.Provider value={{ user, login, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, isInitialized, login, logout }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

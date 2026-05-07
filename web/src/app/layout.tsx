@@ -11,8 +11,8 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "AP Dropout Guardian",
-  description: "AI-assisted early-warning system for student dropouts — RTGS, Government of Andhra Pradesh",
+  title: "AP Stay-In School",
+  description: "AI-powered early-warning system for secondary education — RTGS, Government of Andhra Pradesh",
 };
 
 export default function RootLayout({

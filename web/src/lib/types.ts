@@ -31,6 +31,9 @@ export interface RosterStudent {
   risk_score: number;
   tier: RiskTier;
   grade?: number;
+  migration_flag?: number;
+  caste_clean?: number;
+  family_income_bracket?: number;
 }
 
 export interface Driver {

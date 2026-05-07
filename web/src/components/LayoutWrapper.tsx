@@ -2,9 +2,12 @@
 import { usePathname } from "next/navigation";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import FloatingChatbot from "./FloatingChatbot";
+import { useAuth } from "@/lib/auth";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const isLoginPage = pathname === "/login";
 
   if (isLoginPage) {
@@ -21,7 +24,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     <div className="min-h-full flex flex-col">
       <Header />
       <div className="flex flex-1 min-h-0">
-        <Sidebar />
+        {user && <Sidebar />}
         <div className="flex-1 flex flex-col min-w-0">
           <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-6">
             {children}
@@ -31,6 +34,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           </footer>
         </div>
       </div>
+      <FloatingChatbot />
     </div>
   );
 }

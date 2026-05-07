@@ -146,17 +146,25 @@ function RiskGauge({ score, lang }: { score: number; lang: "en" | "te" }) {
 function DriverItem({
   driver,
   lang,
+  pct,
 }: {
   driver: StudentDetail["drivers"][0];
   lang: "en" | "te";
+  pct: number; // 0-100 relative weight vs top driver
 }) {
+  const label = pct >= 80 ? (lang === "en" ? "HIGH" : "అధిక") : pct >= 40 ? (lang === "en" ? "MED" : "మధ్యమ") : (lang === "en" ? "LOW" : "తక్కువ");
+  const badgeColor = pct >= 80 ? "bg-red-100 text-red-700" : pct >= 40 ? "bg-orange-100 text-orange-700" : "bg-yellow-100 text-yellow-700";
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50/50 px-4 py-3">
-      <div className="flex items-baseline justify-between gap-3">
+    <div className="rounded-lg border border-red-200 bg-red-50/50 px-4 py-3 space-y-2">
+      <div className="flex items-center justify-between gap-3">
         <div className="text-sm font-semibold text-red-900">{lang === "en" ? driver.label_en : driver.label_te}</div>
-        <div className="text-xs text-red-600 tabular-nums shrink-0">+{driver.contrib.toFixed(2)}</div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${badgeColor}`}>{label}</span>
       </div>
-      <div className="text-sm text-zinc-700 mt-1 leading-relaxed">
+      {/* Weight bar */}
+      <div className="h-1.5 rounded-full bg-red-100 overflow-hidden">
+        <div className="h-full rounded-full bg-red-500 transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="text-sm text-zinc-700 leading-relaxed">
         {lang === "en" ? driver.sentence_en : driver.sentence_te}
       </div>
     </div>
@@ -164,9 +172,11 @@ function DriverItem({
 }
 
 function RiskFactorChart({ drivers, lang }: { drivers: StudentDetail["drivers"]; lang: "en" | "te" }) {
+  // Normalize so the top contributor = 100, others proportional — avoids raw SHAP log-odds > 100%
+  const maxContrib = Math.max(...drivers.map(d => Math.abs(d.contrib)), 0.001);
   const data = drivers.map(d => ({
     subject: lang === "en" ? d.label_en : d.label_te,
-    value: d.contrib * 100, // Normalize for visualization
+    value: Math.round((Math.abs(d.contrib) / maxContrib) * 100),
     fullMark: 100,
   }));
 
@@ -175,8 +185,8 @@ function RiskFactorChart({ drivers, lang }: { drivers: StudentDetail["drivers"];
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
           <PolarGrid stroke="#e5e7eb" />
-          <PolarAngleAxis 
-            dataKey="subject" 
+          <PolarAngleAxis
+            dataKey="subject"
             tick={{ fill: "#6b7280", fontSize: 10, fontWeight: 500 }}
           />
           <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
@@ -188,9 +198,9 @@ function RiskFactorChart({ drivers, lang }: { drivers: StudentDetail["drivers"];
             fill="#dc2626"
             fillOpacity={0.15}
           />
-          <Tooltip 
+          <Tooltip
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            formatter={(value: any) => [`${Number(value).toFixed(1)}%`, lang === "en" ? "Impact" : "ప్రభావం"]}
+            formatter={(value: any) => [`${Number(value).toFixed(0)}% relative impact`, lang === "en" ? "Weight" : "బరువు"]}
           />
         </RadarChart>
       </ResponsiveContainer>
@@ -350,9 +360,12 @@ export default function StudentDetailClient({
           </div>
           
           <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[350px]">
-            {student.drivers.map((d, i) => (
-              <DriverItem key={i} driver={d} lang={lang} />
-            ))}
+            {(() => {
+              const maxC = Math.max(...student.drivers.map(d => Math.abs(d.contrib)), 0.001);
+              return student.drivers.map((d, i) => (
+                <DriverItem key={i} driver={d} lang={lang} pct={Math.round((Math.abs(d.contrib) / maxC) * 100)} />
+              ));
+            })()}
           </div>
 
           <div className="mt-6 pt-6 border-t border-zinc-100">

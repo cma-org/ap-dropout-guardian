@@ -4,7 +4,6 @@ import "leaflet/dist/leaflet.css";
 import type { School } from "@/lib/types";
 import { pctFormat, fmtInt } from "@/lib/utils";
 
-// AP approximate center + bounding box
 const AP_CENTER: [number, number] = [15.9129, 79.7400];
 
 function riskColor(r: number): string {
@@ -15,12 +14,16 @@ function riskColor(r: number): string {
 }
 
 function riskRadius(nFlagged: number): number {
-  // 2..12
   return Math.max(2, Math.min(12, Math.sqrt(nFlagged) * 1.5));
 }
 
-export default function SchoolMap({ schools }: { schools: School[] }) {
-  // Subsample large datasets for performance
+export default function SchoolMap({
+  schools,
+  onSchoolSelect,
+}: {
+  schools: School[];
+  onSchoolSelect?: (school: School) => void;
+}) {
   const filtered = schools.filter((s) => s.n_students >= 20);
 
   return (
@@ -39,6 +42,9 @@ export default function SchoolMap({ schools }: { schools: School[] }) {
             fillColor: riskColor(s.avg_risk),
             fillOpacity: 0.6,
             weight: 1,
+          }}
+          eventHandlers={{
+            click: () => onSchoolSelect?.(s),
           }}
         >
           <Popup>

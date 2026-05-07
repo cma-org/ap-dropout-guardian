@@ -109,7 +109,7 @@ export default function RTGSDashboard({
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900 flex items-center gap-2">
             <Globe className="h-6 w-6 text-[color:var(--ap-navy)]" />
-            RTGS Admin — State-wide Control Centre
+            School Education Department — State-wide Control Centre
           </h1>
           <p className="text-sm text-zinc-500 mt-0.5">
             Andhra Pradesh · 26 districts · {fmtInt(schools.length)} schools · AY 2024-25
@@ -117,7 +117,7 @@ export default function RTGSDashboard({
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-zinc-500 bg-zinc-100 rounded-lg px-3 py-2">
-            <span className="font-semibold text-zinc-700">{user?.name}</span> · RTGS Admin
+            <span className="font-semibold text-zinc-700">{user?.name}</span> · School Education Dept.
           </div>
           <button
             onClick={() => exportStateCSV(schools)}
