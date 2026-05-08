@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_DASHBOARD } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity } from "lucide-react";
+import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity, BookOpen, Heart } from "lucide-react";
 
 export default function Sidebar() {
   const { lang } = useLang();
@@ -53,6 +53,8 @@ export default function Sidebar() {
 
       // Model Overview is analytics
       nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
+      nav.push({ href: "/community", label: lang === "en" ? "Community Report" : "కమ్యూనిటీ నివేదిక", icon: <Heart className="h-4 w-4" /> });
+      nav.push({ href: "/api-docs", label: lang === "en" ? "API Docs" : "API డాక్స్", icon: <BookOpen className="h-4 w-4" /> });
     } else {
       // Guests only see Home
       nav.push({ href: "/", label: T.common.home[lang], icon: <Home className="h-4 w-4" /> });
@@ -73,7 +75,7 @@ export default function Sidebar() {
               {lang === "en" ? "Main Menu" : "ప్రధాన మెనూ"}
             </div>
             <nav className="space-y-1">
-              {navItems.filter(n => !n.href.includes('overview') && !n.href.includes('map')).map((n) => {
+              {navItems.filter(n => !n.href.includes('overview') && !n.href.includes('map') && !n.href.includes('community') && !n.href.includes('api-docs')).map((n) => {
                 const active = n.href === "/" 
                   ? path === "/" 
                   : (user && n.href === ROLE_DASHBOARD[user.role] ? path === n.href : path.startsWith(n.href));
@@ -108,7 +110,7 @@ export default function Sidebar() {
               {lang === "en" ? "Analytics" : "విశ్లేషణలు"}
             </div>
             <nav className="space-y-1">
-              {navItems.filter(n => n.href.includes('overview') || n.href.includes('map')).map((n) => {
+              {navItems.filter(n => n.href.includes('overview') || n.href.includes('map') || n.href.includes('community') || n.href.includes('api-docs')).map((n) => {
                 const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
                 return (
                   <Link

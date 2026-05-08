@@ -75,7 +75,7 @@ export default function InterventionModal({
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const all = loadInterventions();
     const entry: Intervention = {
       child_sno,
@@ -88,6 +88,24 @@ export default function InterventionModal({
     };
     all.push(entry);
     saveInterventions(all);
+
+    // Best-effort sync to backend DB — non-blocking, won't fail the UI save
+    try {
+      await fetch("/api/interventions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          childSno: child_sno,
+          actionType,
+          status,
+          assignedTo,
+          notes: notes || null,
+        }),
+      });
+    } catch {
+      // Backend unavailable — localStorage save is the source of truth for this session
+    }
+
     setSaved(true);
     setTimeout(() => { onSaved(); onClose(); }, 800);
   };

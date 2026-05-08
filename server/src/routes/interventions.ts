@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
+import { requireInternalOrAuth } from "../middleware/internalAuth";
 
 const router = Router();
 
 // GET /api/interventions?childSno=123
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireInternalOrAuth, async (req, res) => {
   try {
     const { childSno } = req.query as { childSno?: string };
     const where = childSno ? { childSno: parseInt(childSno, 10) } : {};
@@ -26,7 +27,7 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // POST /api/interventions
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireInternalOrAuth, async (req, res) => {
   try {
     const { childSno, actionType, status, assignedTo, notes } = req.body as {
       childSno?: number;

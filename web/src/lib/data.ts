@@ -83,6 +83,22 @@ export async function getCounsellorTemplates(): Promise<CounsellorTemplates> {
   return apiFetch<CounsellorTemplates>("/api/counsellor-templates");
 }
 
+export async function getModelVersion(): Promise<Record<string, unknown> | null> {
+  try {
+    return await apiFetch<Record<string, unknown>>("/api/model/version");
+  } catch {
+    return null;
+  }
+}
+
+export async function getModelChangelog(): Promise<unknown[] | null> {
+  try {
+    return await apiFetch<unknown[]>("/api/model/changelog");
+  } catch {
+    return null;
+  }
+}
+
 export function pickCounsellorTemplate(
   topDriverFeature: string,
   templates: CounsellorTemplates

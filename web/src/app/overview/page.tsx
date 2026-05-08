@@ -1,12 +1,13 @@
-import { getMetrics } from "@/lib/data";
+import { getMetrics, getModelVersion } from "@/lib/data";
 import MetricCard from "@/components/MetricCard";
 import PRCurve from "@/components/PRCurve";
 import ImportanceBar from "@/components/ImportanceBar";
+import ConfusionMatrix from "@/components/ConfusionMatrix";
 import { fmtInt, pctFormat } from "@/lib/utils";
-import { AlertTriangle, CheckCircle2, Info, Database, Layers, ShieldCheck, Lock, Eye, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, Database, Layers, ShieldCheck, Lock, Eye, Users, Tag, Calendar, RefreshCw } from "lucide-react";
 
 export default async function OverviewPage() {
-  const m = await getMetrics();
+  const [m, modelVersion] = await Promise.all([getMetrics(), getModelVersion()]);
   const t = m.test_oot;
 
   return (
@@ -74,6 +75,24 @@ export default async function OverviewPage() {
           <h3 className="text-sm font-semibold text-zinc-800 mb-2">Top feature importances</h3>
           <ImportanceBar data={m.feature_importance} />
         </div>
+      </div>
+
+      {/* Confusion Matrix */}
+      <div className="rounded-xl border bg-white p-5">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-800">Confusion matrix (2024-25 OOT)</h3>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Actual outcomes vs. model predictions at the current operating threshold ({m.threshold_current.toFixed(4)}).
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-xs text-zinc-400">ROC-AUC</div>
+            <div className="text-xl font-black text-zinc-900 tabular-nums">{t.roc_auc.toFixed(3)}</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">Excellent discrimination</div>
+          </div>
+        </div>
+        <ConfusionMatrix tp={t.tp} fp={t.fp} fn={t.fn} tn={t.tn} />
       </div>
 
       <div className="rounded-xl border bg-white p-5">
@@ -152,6 +171,43 @@ export default async function OverviewPage() {
           Student identifiers are joined on hashed keys at ingest — raw Aadhaar numbers and names are never stored in the model pipeline or served in any API response.
         </p>
       </div>
+
+      {/* Model Versioning */}
+      {modelVersion && (
+        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-zinc-800 mb-3 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-[color:var(--ap-navy)]" />
+            Model versioning & deployment
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div className="rounded-lg bg-zinc-50 border border-zinc-100 px-4 py-3">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">Deployed version</div>
+              <div className="text-lg font-black text-zinc-900">v{String(modelVersion.version)}</div>
+              <div className="text-[11px] text-zinc-500">{String(modelVersion.algorithm)}</div>
+            </div>
+            <div className="rounded-lg bg-zinc-50 border border-zinc-100 px-4 py-3">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Deployed</div>
+              <div className="text-sm font-semibold text-zinc-800">{String(modelVersion.deployedAt).slice(0, 10)}</div>
+              <div className="text-[11px] text-zinc-500">Trained on {String(modelVersion.trainedOn)}</div>
+            </div>
+            <div className="rounded-lg bg-zinc-50 border border-zinc-100 px-4 py-3">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mb-1 flex items-center gap-1"><RefreshCw className="h-3 w-3" /> Next retraining</div>
+              <div className="text-sm font-semibold text-zinc-800">{String(modelVersion.nextRetrainingScheduled).slice(0, 10)}</div>
+              <div className="text-[11px] text-zinc-500">{String(modelVersion.retrainingCadence)}</div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              `${String(modelVersion.features && typeof modelVersion.features === 'object' && 'total' in modelVersion.features ? (modelVersion.features as {total: number}).total : '47')} features`,
+              `Explainability: ${String(modelVersion.explainability)}`,
+              `Retention: ${String(modelVersion.dataRetentionDays)} days`,
+              `Compliance: ${String(modelVersion.complianceFramework)}`,
+            ].map((tag) => (
+              <span key={tag} className="rounded-full bg-zinc-100 border border-zinc-200 text-[11px] text-zinc-600 px-3 py-1">{tag}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Privacy & Compliance */}
       <div className="rounded-xl border border-emerald-200 bg-white p-5">

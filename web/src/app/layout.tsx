@@ -4,6 +4,7 @@ import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import ConsentModal from "@/components/ConsentModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="min-h-full">
         <AuthProvider>
           <I18nProvider>
+            <ConsentModal />
             <LayoutWrapper>
               {children}
             </LayoutWrapper>
