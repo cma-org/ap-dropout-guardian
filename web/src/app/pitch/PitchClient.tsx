@@ -63,7 +63,7 @@ export default function PitchClient() {
   const [printMode, setPrintMode] = useState(false);
 
   useEffect(() => {
-    fetch("/data/metrics_full.json").then(r => r.json()).then(m => setMetrics(m)).catch(() => {});
+    fetch("/api/metrics").then(r => r.json()).then(m => setMetrics(m)).catch(() => {});
   }, []);
 
   const total = 10;

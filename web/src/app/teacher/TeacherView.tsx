@@ -35,7 +35,7 @@ export default function TeacherView({ schools }: { schools: School[] }) {
   useEffect(() => {
     if (!selectedId) return;
     setLoading(true);
-    fetch(`/data/roster/${selectedId}.json`)
+    fetch(`/api/schools/${selectedId}/roster`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: RosterStudent[] | null) => {
         if (data) {

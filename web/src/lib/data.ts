@@ -1,25 +1,34 @@
-import "server-only"; // prevents Turbopack from statically tracing public/data/** into the client bundle
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import "server-only";
 import type {
   Metrics, Mandal, School, StudentDetail, RosterStudent, CounsellorTemplates,
 } from "./types";
 
-// When API_URL is set the backend handles data; otherwise fall back to static JSON files.
+// API_URL is required — the app does not fall back to local JSON files.
 const API_URL = process.env.API_URL;
-const PUBLIC = path.join(process.cwd(), "public", "data");
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
-async function readJson<T>(p: string): Promise<T> {
-  const buf = await fs.readFile(path.join(PUBLIC, p), "utf8");
-  return JSON.parse(buf) as T;
+if (!API_URL) {
+  throw new Error(
+    "API_URL environment variable is not set. " +
+    "Set it to the backend URL (e.g. http://localhost:3001) in .env.local."
+  );
 }
 
+// ─── helper ──────────────────────────────────────────────────────────────────
+
 async function apiFetch<T>(endpoint: string): Promise<T> {
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    next: { revalidate: 300 }, // cache 5 min
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${endpoint}`, {
+      next: { revalidate: 300 }, // cache 5 min
+    });
+  } catch (cause) {
+    throw new Error(
+      `Cannot reach backend at ${API_URL}${endpoint}. ` +
+      `Make sure the server is running (cd server && npm run dev). ` +
+      `Underlying error: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { cause }
+    );
+  }
   if (!res.ok) throw new Error(`API ${endpoint} → ${res.status}`);
   return res.json() as Promise<T>;
 }
@@ -27,66 +36,51 @@ async function apiFetch<T>(endpoint: string): Promise<T> {
 // ─── public API ──────────────────────────────────────────────────────────────
 
 export async function getMetrics(): Promise<Metrics> {
-  if (API_URL) return apiFetch<Metrics>("/api/metrics");
-  return readJson<Metrics>("metrics_full.json");
+  return apiFetch<Metrics>("/api/metrics");
 }
 
 export async function getSchools(): Promise<School[]> {
-  if (API_URL) return apiFetch<School[]>("/api/schools");
-  return readJson<School[]>("schools.json");
+  return apiFetch<School[]>("/api/schools");
+}
+
+export async function getSchool(schoolId: number): Promise<School | null> {
+  try {
+    return await apiFetch<School>(`/api/schools/${schoolId}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function getMandals(): Promise<Mandal[]> {
-  if (API_URL) return apiFetch<Mandal[]>("/api/mandals");
-  return readJson<Mandal[]>("mandal_aggregates.json");
+  return apiFetch<Mandal[]>("/api/mandals");
 }
 
 export async function getDistricts(): Promise<string[]> {
-  if (API_URL) return apiFetch<string[]>("/api/districts");
-  return readJson<string[]>("districts.json");
+  return apiFetch<string[]>("/api/districts");
 }
 
 export async function getStudent(childSno: number): Promise<StudentDetail | null> {
-  if (API_URL) {
-    try {
-      return await apiFetch<StudentDetail>(`/api/students/${childSno}`);
-    } catch {
-      return null;
-    }
-  }
   try {
-    return await readJson<StudentDetail>(`students/${childSno}.json`);
+    return await apiFetch<StudentDetail>(`/api/students/${childSno}`);
   } catch {
     return null;
   }
 }
 
 export async function getRoster(schoolId: number): Promise<RosterStudent[] | null> {
-  if (API_URL) {
-    try {
-      return await apiFetch<RosterStudent[]>(`/api/schools/${schoolId}/roster`);
-    } catch {
-      return null;
-    }
-  }
   try {
-    return await readJson<RosterStudent[]>(`roster/${schoolId}.json`);
+    return await apiFetch<RosterStudent[]>(`/api/schools/${schoolId}/roster`);
   } catch {
     return null;
   }
 }
 
 export async function getFlaggedSchoolIds(): Promise<number[]> {
-  if (API_URL) return apiFetch<number[]>("/api/schools/flagged");
-  const files = await fs.readdir(path.join(PUBLIC, "roster"));
-  return files
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => parseInt(f.replace(".json", ""), 10));
+  return apiFetch<number[]>("/api/schools/flagged");
 }
 
 export async function getCounsellorTemplates(): Promise<CounsellorTemplates> {
-  if (API_URL) return apiFetch<CounsellorTemplates>("/api/counsellor-templates");
-  return readJson<CounsellorTemplates>("counsellor_templates.json");
+  return apiFetch<CounsellorTemplates>("/api/counsellor-templates");
 }
 
 export function pickCounsellorTemplate(

@@ -33,7 +33,7 @@ export default function HMAnalyticsPage() {
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/data/roster/${user.schoolId}.json`)
+      fetch(`/api/schools/${user.schoolId}/roster`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
           // Inject mock data for consistency and professional UI

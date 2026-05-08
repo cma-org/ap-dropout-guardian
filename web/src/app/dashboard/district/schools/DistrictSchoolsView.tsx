@@ -124,7 +124,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
     if (!selectedId) return;
     setLoading(true);
     setRoster(null); // Reset roster while loading new school
-    fetch(`/data/roster/${selectedId}.json`)
+    fetch(`/api/schools/${selectedId}/roster`)
       .then((r) => {
         if (!r.ok) return null;
         return r.json();

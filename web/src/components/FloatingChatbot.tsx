@@ -234,8 +234,8 @@ export default function FloatingChatbot() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/data/metrics_full.json").then(r => r.json()),
-      fetch("/data/mandal_aggregates.json").then(r => r.json()),
+      fetch("/api/metrics").then(r => r.json()),
+      fetch("/api/mandals").then(r => r.json()),
     ]).then(([m, mandals]) => {
       // Aggregate mandal data into district totals
       const distMap: Record<string, DistrictStat> = {};

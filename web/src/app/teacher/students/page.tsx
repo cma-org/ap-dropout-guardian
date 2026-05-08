@@ -58,7 +58,7 @@ export default function StudentsListPage() {
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/data/roster/${user.schoolId}.json`)
+      fetch(`/api/schools/${user.schoolId}/roster`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
           const withExtras = data.map((s: any) => ({

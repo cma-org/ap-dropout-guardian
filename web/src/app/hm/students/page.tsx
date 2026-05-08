@@ -23,7 +23,7 @@ export default function HMStudentsListPage() {
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/data/roster/${user.schoolId}.json`)
+      fetch(`/api/schools/${user.schoolId}/roster`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
           // Inject mock grades for consistency with dashboard logic

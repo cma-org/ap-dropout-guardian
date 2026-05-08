@@ -82,7 +82,7 @@ export default function TeacherAnalyticsPage() {
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/data/roster/${user.schoolId}.json`)
+      fetch(`/api/schools/${user.schoolId}/roster`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
           const enriched = data.map((s: any) => {

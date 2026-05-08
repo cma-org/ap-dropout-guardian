@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useLang } from "@/lib/i18n";
 import type { School, Metrics } from "@/lib/types";
 import { fmtInt, pctFormat } from "@/lib/utils";
@@ -23,16 +23,16 @@ const UPLOAD_SLOTS = [
 type UploadState = "uploading" | "done" | "error";
 type FileEntry = { name: string; size: number; state: UploadState };
 
-type Props = { schools: School[]; metrics: Metrics };
+type Props = { school: School | null; metrics: Metrics };
 
-export default function TeacherDataView({ schools, metrics }: Props) {
+export default function TeacherDataView({ school, metrics }: Props) {
   const { lang } = useLang();
   const [uploads, setUploads] = useState<Record<string, FileEntry>>({});
   const [dragging, setDragging] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const totalStudents = useMemo(() => schools.reduce((s, sc) => s + sc.n_students, 0), [schools]);
-  const totalFlagged = useMemo(() => schools.reduce((s, sc) => s + sc.n_flagged, 0), [schools]);
+  const totalStudents = school?.n_students ?? 0;
+  const totalFlagged = school?.n_flagged ?? 0;
 
   function handleFile(slotId: string, file: File) {
     setUploads((u) => ({ ...u, [slotId]: { name: file.name, size: file.size, state: "uploading" } }));
