@@ -79,7 +79,11 @@ export default function RTGSDashboard({
   const { user } = useAuth();
   const router = useRouter();
   const [alertsVisible, setAlertsVisible] = useState(DEMO_ALERTS.length);
-  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setLastRefresh(new Date());
+  }, []);
   const [drillDistrict, setDrillDistrict] = useState<string | null>(null);
 
   useEffect(() => {
@@ -151,7 +155,7 @@ export default function RTGSDashboard({
         </div>
         <div className="flex items-center gap-1.5 text-zinc-600">
           <Activity className="h-3.5 w-3.5" />
-          Last refresh: <span className="font-medium text-zinc-800">{lastRefresh.toLocaleTimeString()}</span>
+          Last refresh: <span className="font-medium text-zinc-800">{lastRefresh ? lastRefresh.toLocaleTimeString() : "—"}</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5 text-zinc-500">
           Model: XGBoost v1 · Recall {pctFormat(metrics.test_oot.recall, 1)} · ROC-AUC {metrics.test_oot.roc_auc.toFixed(3)}
