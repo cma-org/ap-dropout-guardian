@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_DASHBOARD } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity, BookOpen, Heart } from "lucide-react";
+import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity, BookOpen, Heart, Building2 } from "lucide-react";
 
 export default function Sidebar() {
   const { lang } = useLang();
@@ -46,8 +46,8 @@ export default function Sidebar() {
 
       // School Education Department — super admin, sees everything
       if (user.role === "sed") {
-        nav.push({ href: "/dashboard/district/schools", label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
-        nav.push({ href: "/dashboard/district/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
+        nav.push({ href: "/dashboard/sed/districts", label: lang === "en" ? "Districts" : "జిల్లాలు", icon: <Building2 className="h-4 w-4" /> });
+        nav.push({ href: "/dashboard/sed/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
         nav.push({ href: "/map", label: T.nav.stateMap[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
 
