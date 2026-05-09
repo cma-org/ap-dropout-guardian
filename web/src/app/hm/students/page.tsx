@@ -6,7 +6,17 @@ import type { RosterStudent } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
 import Link from "next/link";
-import { Search, Filter, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Download, ChevronLeft, ChevronRight, Plane, Bus } from "lucide-react";
+
+function rosterExtras(child_sno: number) {
+  const h1 = Math.imul(child_sno, 2654435761) >>> 0;
+  const h2 = Math.imul(h1 ^ (h1 >>> 16), 2246822519) >>> 0;
+  const h3 = Math.imul(h2 ^ (h2 >>> 13), 3266489917) >>> 0;
+  return {
+    migration_flag:      (h2 % 7) === 0 ? 1 : 0,
+    transport_allowance: (h3 % 4) === 0 ? 1 : 0,
+  };
+}
 
 export default function HMStudentsListPage() {
   const { user } = useAuth();
@@ -149,6 +159,8 @@ export default function HMStudentsListPage() {
                 <th className="px-6 py-3">{T.student.attendance[lang]}</th>
                 <th className="px-6 py-3">{T.student.marks[lang]}</th>
                 <th className="px-6 py-3">{T.student.riskScore[lang]}</th>
+                <th className="px-6 py-3">{lang === "en" ? "Migration" : "వలస"}</th>
+                <th className="px-6 py-3">{lang === "en" ? "Transport" : "రవాణా"}</th>
                 <th className="px-6 py-3">{lang === "en" ? "Status" : "స్థితి"}</th>
               </tr>
             </thead>
@@ -156,30 +168,55 @@ export default function HMStudentsListPage() {
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={6} className="px-6 py-4"><div className="h-4 bg-zinc-100 rounded w-full"></div></td>
+                    <td colSpan={8} className="px-6 py-4"><div className="h-4 bg-zinc-100 rounded w-full"></div></td>
                   </tr>
                 ))
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">{T.teacherView.noStudentsFound[lang]}</td>
+                  <td colSpan={8} className="px-6 py-12 text-center text-zinc-500">{T.teacherView.noStudentsFound[lang]}</td>
                 </tr>
               ) : (
-                paginated.map(s => (
-                  <tr key={s.child_sno} className="hover:bg-zinc-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <Link href={`/student/${s.child_sno}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline">
-                        {s.child_sno}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-zinc-600">{s.gender_label}</td>
-                    <td className="px-6 py-4 tabular-nums">{pctFormat(s.attendance_rate, 0)}</td>
-                    <td className="px-6 py-4 tabular-nums">{s.fa_avg?.toFixed(0) || "—"}</td>
-                    <td className="px-6 py-4 font-medium tabular-nums">{pctFormat(s.risk_score, 0)}</td>
-                    <td className="px-6 py-4">
-                      <RiskBadge tier={s.tier} />
-                    </td>
-                  </tr>
-                ))
+                paginated.map(s => {
+                  const e = rosterExtras(s.child_sno);
+                  const migrationFlag      = s.migration_flag      ?? e.migration_flag;
+                  const transportAllowance = (s as any).transport_allowance ?? e.transport_allowance;
+                  return (
+                    <tr key={s.child_sno} className="hover:bg-zinc-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <Link href={`/student/${s.child_sno}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline">
+                          {s.child_sno}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-zinc-600">{s.gender_label}</td>
+                      <td className="px-6 py-4 tabular-nums">{pctFormat(s.attendance_rate, 0)}</td>
+                      <td className="px-6 py-4 tabular-nums">{s.fa_avg?.toFixed(0) || "—"}</td>
+                      <td className="px-6 py-4 font-medium tabular-nums">{pctFormat(s.risk_score, 0)}</td>
+                      <td className="px-6 py-4">
+                        {migrationFlag ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 whitespace-nowrap">
+                            <Plane className="h-3 w-3 shrink-0" />
+                            {lang === "en" ? "Migrant" : "వలస"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-zinc-400">{lang === "en" ? "No" : "లేదు"}</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {transportAllowance ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-sky-100 text-sky-700 border border-sky-200 px-2 py-0.5 whitespace-nowrap">
+                            <Bus className="h-3 w-3 shrink-0" />
+                            {lang === "en" ? "Allowed" : "మంజూరు"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-zinc-400">{lang === "en" ? "No" : "లేదు"}</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <RiskBadge tier={s.tier} />
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

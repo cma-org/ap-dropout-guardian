@@ -48,13 +48,15 @@ export default function Sidebar() {
       if (user.role === "sed") {
         nav.push({ href: "/dashboard/district/schools", label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
         nav.push({ href: "/dashboard/district/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
-        nav.push({ href: "/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
+        nav.push({ href: "/map", label: T.nav.stateMap[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
 
-      // Model Overview is analytics
-      nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
-      nav.push({ href: "/community", label: lang === "en" ? "Community Report" : "కమ్యూనిటీ నివేదిక", icon: <Heart className="h-4 w-4" /> });
-      nav.push({ href: "/api-docs", label: lang === "en" ? "API Docs" : "API డాక్స్", icon: <BookOpen className="h-4 w-4" /> });
+      // Model Overview / Community / API Docs — district & SED only
+      if (user.role === "district" || user.role === "sed") {
+        nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
+        nav.push({ href: "/community", label: lang === "en" ? "Community Report" : "కమ్యూనిటీ నివేదిక", icon: <Heart className="h-4 w-4" /> });
+        nav.push({ href: "/api-docs", label: lang === "en" ? "API Docs" : "API డాక్స్", icon: <BookOpen className="h-4 w-4" /> });
+      }
     } else {
       // Guests only see Home
       nav.push({ href: "/", label: T.common.home[lang], icon: <Home className="h-4 w-4" /> });
@@ -104,7 +106,8 @@ export default function Sidebar() {
             </nav>
           </div>
 
-          {/* Analytics & Reports */}
+          {/* Analytics & Reports — district/SED only */}
+          {navItems.some(n => n.href.includes('overview') || n.href.includes('community') || n.href.includes('api-docs')) && (
           <div>
             <div className="px-4 mb-3 text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">
               {lang === "en" ? "Analytics" : "విశ్లేషణలు"}
@@ -136,8 +139,9 @@ export default function Sidebar() {
               })}
             </nav>
           </div>
+          )}
         </div>
-        
+
         {/* Status Card */}
         <div className="mt-auto p-4 rounded-2xl bg-white border border-zinc-200/60 shadow-sm">
           <div className="flex items-center justify-between mb-3">
