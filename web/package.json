@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.21",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
@@ -21,14 +22,13 @@
     "react-leaflet": "^5.0.0",
     "recharts": "^3.8.1",
     "server-only": "^0.0.1",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   }
 }
