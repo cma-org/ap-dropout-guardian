@@ -63,7 +63,7 @@ router.post("/", requireInternalOrAuth, async (req, res) => {
 // PUT /api/interventions/:id
 router.put("/:id", requireAuth, async (req, res) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     const { status, notes, completedAt } = req.body as {
       status?: string;
       notes?: string;
@@ -95,7 +95,7 @@ router.put("/:id", requireAuth, async (req, res) => {
 // DELETE /api/interventions/:id
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     await prisma.intervention.delete({ where: { id } });
     res.status(204).send();
   } catch (err) {

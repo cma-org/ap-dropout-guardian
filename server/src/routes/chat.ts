@@ -4,7 +4,11 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
-const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY ?? "" });
+function getOpenAI(): OpenAI {
+  const key = process.env.OPEN_API_KEY || process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("OpenAI API key not configured (set OPEN_API_KEY or OPENAI_API_KEY)");
+  return new OpenAI({ apiKey: key });
+}
 
 function fmt(n: number) {
   return n.toLocaleString("en-IN");
@@ -384,7 +388,7 @@ ${dataContext}
 USER QUERY:
 ${query}`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
