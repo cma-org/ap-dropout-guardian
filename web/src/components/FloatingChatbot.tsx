@@ -2,6 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, RefreshCw } from "lucide-react";
 import { useLang } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import type { Role } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 type Msg = { role: "user" | "bot"; text: string };
@@ -136,16 +138,30 @@ function featureLabel(f: string) {
 }
 
 // ── response builder ──────────────────────────────────────────────────────────
-function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
+function answer(query: string, lang: "en" | "te", d: LiveData | null, role: Role = "teacher", userName = "", userDistrict = "", userSchoolName = "", userGrade?: number): string {
   if (!d) return lang === "en" ? "Still loading live data, please try again in a moment." : "డేటా లోడ్ అవుతోంది…";
 
   const lower = query.toLowerCase();
   const m = d.metrics;
   const flagged = d.totalFlagged;
 
+  const deny = (suggestion: string) => lang === "en"
+    ? `This information is not available for your role. ${suggestion}`
+    : `ఈ సమాచారం మీ పాత్రకు అందుబాటులో లేదు. ${suggestion}`;
+
+  const mySchoolRow = userSchoolName
+    ? d.topSchools.find(s => (s.school_name ?? "").toLowerCase() === userSchoolName.toLowerCase())
+    : null;
+
+  const teacherSuggestion = `As a Teacher, try "my class", "critical students in my class", "top reasons", or "attendance".`;
+  const hmSuggestion = `As a Headmaster, try "my school", "school-wide risk", "gender breakdown", or "model accuracy".`;
+  const districtSuggestion = `As a District Officer, try "my district stats", "top mandals", or "school-wise risk comparison".`;
+
   // ── 1. District-specific lookup ──
   const distName = resolveDistrict(lower, d.districts);
   if (distName) {
+    if (role === "teacher") return deny(`District-level data is not available for Teachers. ${teacherSuggestion}`);
+    if (role === "hm") return deny(`District-level data is not available for Headmasters. ${hmSuggestion}`);
     const s = d.districts[distName];
     const mandalList = d.mandals
       .filter(row => row.district_name === distName)
@@ -161,8 +177,35 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
       : `📍 **${distName}** జిల్లా (లైవ్ డేటా)\n• పాఠశాలలు: ${fmt(s.nSchools)}\n• నమోదైన విద్యార్థులు: ${fmt(s.nStudents)}\n• ప్రమాదంలో: ${fmt(s.nFlagged)} (${s.pct.toFixed(1)}%)\n• సగటు ప్రమాదం: ${pct(s.avgRisk)}\n• క్రిటికల్ పాఠశాలలు: ${s.nCritical}`;
   }
 
+  // ── 1a. Role-scoped "my district" ──
+  if ((/my district|my stats|నా జిల్లా/.test(lower)) && userDistrict && d.districts[userDistrict]) {
+    if (role !== "district") return deny(`District stats are only available for District Officers. ${role === "teacher" ? teacherSuggestion : hmSuggestion}`);
+    const distName = userDistrict;
+    const s = d.districts[distName];
+    const mandalList = d.mandals
+      .filter(row => row.district_name === distName)
+      .sort((a, b) => b.n_flagged - a.n_flagged)
+      .slice(0, 5);
+    const mandalLines = mandalList.map(
+      (mn, i) => `   ${i + 1}. ${mn.mandal_name} — ${fmt(mn.n_flagged)} flagged / ${fmt(mn.n_students)} students (${pct(mn.n_flagged / mn.n_students)})`
+    ).join("\n");
+    return lang === "en"
+      ? `📍 **${distName}** — your district (live data)\n• Schools: ${fmt(s.nSchools)}\n• Students: ${fmt(s.nStudents)}\n• Flagged: ${fmt(s.nFlagged)} (${s.pct.toFixed(1)}% flag rate)\n• Avg risk: ${pct(s.avgRisk)}\n\nTop mandals:\n${mandalLines}`
+      : `📍 **${distName}** — మీ జిల్లా (లైవ్ డేటా)\n• పాఠశాలలు: ${fmt(s.nSchools)}\n• విద్యార్థులు: ${fmt(s.nStudents)}\n• ప్రమాదంలో: ${fmt(s.nFlagged)} (${s.pct.toFixed(1)}%)\n• సగటు ప్రమాదం: ${pct(s.avgRisk)}`;
+  }
+
+  // ── 1b. Teacher grade/class query ──
+  if ((/my class|my grade|class risk|my students|నా తరగతి|నా గ్రేడ్/.test(lower)) && role === "teacher" && userGrade) {
+    const schoolName = mySchoolRow?.school_name ?? userSchoolName ?? "your school";
+    return lang === "en"
+      ? `👩‍🏫 **Your Class (Grade ${userGrade})** at ${schoolName}\n\nYou are assigned to Grade ${userGrade}. The AI assistant can answer class-level questions about risk factors, attendance impact, dropout reasons, and support schemes.\n\n**Available data highlights:**\n• Top dropout risk factors from statewide model\n• Attendance impact on dropout probability\n• Government schemes for student support\n\nTry asking:\n• "top reasons" — top dropout risk factors\n• "schemes" — government support programs\n• "attendance" — how attendance affects risk`
+      : `👩‍🏫 **మీ తరగతి (గ్రేడ్ ${userGrade})** ${schoolName} లో\n\nమీరు గ్రేడ్ ${userGrade} కు నియమించబడ్డారు. రిస్క్ ఫ్యాక్టర్లు, హాజరు ప్రభావం, డ్రాపౌట్ కారణాలు మరియు పథకాల గురించి అడగండి.`;
+  }
+
   // ── 2. Mandal query ──
   if (/mandal|మండల/.test(lower)) {
+    if (role === "teacher") return deny(`Mandal-level data is not available for Teachers. ${teacherSuggestion}`);
+    if (role === "hm") return deny(`Mandal-level data is not available for Headmasters. ${hmSuggestion}`);
     const lines = d.topMandals.slice(0, 8).map(
       (mn, i) => `${i + 1}. **${mn.mandal_name}** (${mn.district_name}) — ${fmt(mn.n_flagged)} flagged / ${fmt(mn.n_students)} students (${pct(mn.n_flagged / mn.n_students)})`
     ).join("\n");
@@ -173,7 +216,20 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 3. School-specific ──
   if (/school|పాఠశాల/.test(lower) && !/total school|how many school/.test(lower)) {
-    // Try to find a named school
+    // "My school" for HM only — teachers see class-level only
+    if ((/my school|నా పాఠశాల/.test(lower)) && userSchoolName) {
+      if (role === "teacher") return lang === "en"
+        ? `👩‍🏫 As a Teacher, school-wide stats are not available. Try "my class" for your Grade ${userGrade ?? "—"} overview, "critical students" for at-risk counts, or "top reasons" for dropout drivers.`
+        : `👩‍🏫 టీచర్‌గా, పాఠశాల గణాంకాలు అందుబాటులో లేవు. "నా తరగతి" ప్రయత్నించండి.`;
+      if (role !== "hm") return deny(`School-level data is limited to Headmasters. ${role === "district" ? districtSuggestion : "Try \"statewide coverage\" or \"top 5 districts\"."}`);
+      const ms = mySchoolRow;
+      if (ms) {
+        return lang === "en"
+          ? `🏫 **${ms.school_name}** — your school\n• District: ${ms.district_name} · Mandal: ${ms.mandal_name}\n• Students: ${fmt(ms.n_students)} · Flagged: ${fmt(ms.n_flagged)}\n• Avg risk: ${pct(ms.avg_risk)}`
+          : `🏫 **${ms.school_name}** — మీ పాఠశాల\n• జిల్లా: ${ms.district_name} · మండలం: ${ms.mandal_name}\n• విద్యార్థులు: ${fmt(ms.n_students)} · ప్రమాదంలో: ${fmt(ms.n_flagged)}`;
+      }
+    }
+    // Named school search — district (within their district) or SED only
     const words = lower.replace(/school/g, "").trim().split(/\s+/).filter(w => w.length > 3);
     const match = words.length
       ? d.topSchools.find(s =>
@@ -182,11 +238,15 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
         )
       : null;
     if (match) {
+      if (role === "teacher") return deny(`School search is not available for Teachers. ${teacherSuggestion}`);
+      if (role === "hm") return deny(`School search is not available for Headmasters. ${hmSuggestion}`);
       return lang === "en"
         ? `🏫 **${match.school_name}**\n• District: ${match.district_name} · Mandal: ${match.mandal_name}\n• Students: ${fmt(match.n_students)} · Flagged: ${fmt(match.n_flagged)}\n• Avg risk: ${pct(match.avg_risk)}`
         : `🏫 **${match.school_name}**\n• జిల్లా: ${match.district_name} · మండలం: ${match.mandal_name}\n• విద్యార్థులు: ${fmt(match.n_students)} · ప్రమాదంలో: ${fmt(match.n_flagged)}`;
     }
-    // Top critical schools
+    // Top critical schools — district or SED only
+    if (role === "teacher") return deny(`School-wide comparisons are not available for Teachers. ${teacherSuggestion}`);
+    if (role === "hm") return deny(`School-wide comparisons are not available for Headmasters. ${hmSuggestion}`);
     const lines = d.topSchools.slice(0, 6).map(
       (s, i) => `${i + 1}. ${s.school_name} (${s.district_name}) — ${fmt(s.n_flagged)} flagged`
     ).join("\n");
@@ -198,6 +258,27 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
   // ── 4. Tier / counts ──
   if (/critical|tier|flagged|risk tier|how many flag|ఎంతమంది|క్రిటికల్|రిస్క్ టైర్/.test(lower)) {
     const t = m.tier_counts;
+    // Teacher: scope to class — share available data
+    if (role === "teacher") {
+      const t = m.tier_counts;
+      return lang === "en"
+        ? `📊 **Risk Tier Reference (Statewide)**\nModel flags students into these risk tiers:\n• 🔴 Critical: **${fmt(t.Critical ?? 0)}** — immediate intervention required\n• 🟠 High: **${fmt(t.High ?? 0)}** — needs monitoring\n• 🟡 Medium: **${fmt(t.Medium ?? 0)}** — watchlist\n• 🟢 Low: **${fmt(t.Low ?? 0)}** — on track\n\nFor your Grade ${userGrade ?? "—"} class students, try "top reasons" for what drives dropout risk or check your dashboard for per-student tier details.`
+        : `📊 **రిస్క్ టైర్ సూచన (రాష్ట్ర స్థాయి)**\n• 🔴 క్రిటికల్: **${fmt(t.Critical ?? 0)}** — వెంటనే చర్య\n• 🟠 హై: **${fmt(t.High ?? 0)}** — పర్యవేక్షణ\n• 🟡 మీడియం: **${fmt(t.Medium ?? 0)}** — వాచ్‌లిస్ట్\n• 🟢 లో: **${fmt(t.Low ?? 0)}** — సురక్షితం`;
+    }
+    // HM: scope to school
+    if (role === "hm") {
+      return lang === "en"
+        ? `📊 **Your School — ${mySchoolRow?.school_name ?? userSchoolName ?? "—"}**\n• Students: ${fmt(mySchoolRow ? mySchoolRow.n_students : 0)}\n• Flagged: **${fmt(mySchoolRow ? mySchoolRow.n_flagged : 0)}** (${mySchoolRow ? pct(mySchoolRow.n_flagged / mySchoolRow.n_students) : "—"})\n• Avg risk: ${mySchoolRow ? pct(mySchoolRow.avg_risk) : "—"}\n\nStatewide reference:\n• 🔴 Critical: ${fmt(t.Critical ?? 0)}\n• 🟠 High: ${fmt(t.High ?? 0)}\n• 🟡 Medium: ${fmt(t.Medium ?? 0)}\n• 🟢 Low: ${fmt(t.Low ?? 0)}`
+        : `📊 **మీ పాఠశాల**\n• విద్యార్థులు: ${fmt(mySchoolRow ? mySchoolRow.n_students : 0)}\n• ప్రమాదంలో: **${fmt(mySchoolRow ? mySchoolRow.n_flagged : 0)}**\n\nరాష్ట్ర స్థాయి:\n• 🔴 క్రిటికల్: ${fmt(t.Critical ?? 0)}\n• 🟠 హై: ${fmt(t.High ?? 0)}`;
+    }
+    // District: scope to district
+    if (role === "district" && userDistrict && d.districts[userDistrict]) {
+      const ds = d.districts[userDistrict];
+      return lang === "en"
+        ? `📊 **${userDistrict} District**\n• Schools: ${fmt(ds.nSchools)}\n• Students: ${fmt(ds.nStudents)}\n• Flagged: **${fmt(ds.nFlagged)}** (${ds.pct.toFixed(1)}%)\n• Avg risk: ${pct(ds.avgRisk)}\n• Critical-zone schools: ${ds.nCritical}`
+        : `📊 **${userDistrict} జిల్లా**\n• పాఠశాలలు: ${fmt(ds.nSchools)}\n• విద్యార్థులు: ${fmt(ds.nStudents)}\n• ప్రమాదంలో: **${fmt(ds.nFlagged)}**\n• సగటు ప్రమాదం: ${pct(ds.avgRisk)}`;
+    }
+    // SED / fallback: state-wide
     return lang === "en"
       ? `AY 2024-25 cohort across ${fmt(d.totalSchools)} schools (live):\n• 🔴 Critical: **${fmt(t.Critical ?? 0)}**\n• 🟠 High:     **${fmt(t.High ?? 0)}**\n• 🟡 Medium:   **${fmt(t.Medium ?? 0)}**\n• 🟢 Low:      **${fmt(t.Low ?? 0)}**\n\nTotal flagged: **${fmt(flagged)}** — ${pct(flagged / d.totalStudents)} of ${fmt(d.totalStudents)} enrolled students`
       : `AY 2024-25 — ${fmt(d.totalSchools)} పాఠశాలలు (లైవ్):\n• 🔴 క్రిటికల్: **${fmt(t.Critical ?? 0)}**\n• 🟠 హై: **${fmt(t.High ?? 0)}**\n• 🟡 మీడియం: **${fmt(t.Medium ?? 0)}**\n• 🟢 లో: **${fmt(t.Low ?? 0)}**\n\nమొత్తం: **${fmt(flagged)}** (${pct(flagged / d.totalStudents)})`;
@@ -205,6 +286,7 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 5. Model accuracy ──
   if (/accuracy|recall|precision|metric|performance|roc|auc|ఖచ్చితత్వం|రికాల్|మెట్రిక్/.test(lower)) {
+    if (role === "teacher") return deny(`Model accuracy metrics are not available for Teachers. ${teacherSuggestion}`);
     const oot = m.test_oot;
     return lang === "en"
       ? `Model performance — AY 2024-25 out-of-time test (live):\n• Recall:    **${(oot.recall * 100).toFixed(1)}%** — ${(oot.recall * 100).toFixed(0)}% of actual dropouts caught early\n• Precision: **${(oot.precision * 100).toFixed(1)}%** — ${fmt(oot.tp)} true dropouts in ${fmt(oot.tp + oot.fp)} flagged\n• PR-AUC:  **${oot.pr_auc.toFixed(3)}**  · ROC-AUC: **${oot.roc_auc.toFixed(3)}**\n• Threshold: p ≥ ${m.threshold_current.toFixed(4)}\n• False negatives (missed): ${fmt(oot.fn)}  · False positives: ${fmt(oot.fp)}\n• Exclusion error: ${(oot.exclusion_error * 100).toFixed(1)}%  · Inclusion error: ${(oot.inclusion_error * 100).toFixed(1)}%`
@@ -213,6 +295,7 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 6. Gender ──
   if (/boys|girls|gender|male|female|అబ్బాయి|అమ్మాయి|లింగ/.test(lower)) {
+    if (role === "teacher") return deny(`Gender breakdown data is not available for Teachers. ${teacherSuggestion}`);
     const male   = m.fairness.find(f => f.group === "gender=Male");
     const female = m.fairness.find(f => f.group === "gender=Female");
     if (male && female) {
@@ -226,6 +309,7 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
   // ── 7. Top districts (must come before caste — "districts" contains "st") ──
   if (/top district|worst district|highest risk|most dropout|అత్యధిక|top 5|top 10/.test(lower)
       || (/district/.test(lower) && /top|worst|rank|list|all|highest|most/.test(lower))) {
+    if (role !== "sed") return deny(`Statewide district comparisons are only available for SED officials. ${role === "teacher" ? teacherSuggestion : role === "hm" ? hmSuggestion : districtSuggestion}`);
     const n   = lower.includes("10") ? 10 : 5;
     const top = Object.entries(d.districts)
       .sort((a, b) => b[1].nFlagged - a[1].nFlagged)
@@ -240,6 +324,7 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 8. Caste (word-boundary on sc/st/bc to avoid matching "districts", "district" etc.) ──
   if (/caste|\bsc\b|\bst\b|\bbc\b|tribal|scheduled|కులం|గిరిజన/.test(lower)) {
+    if (role === "teacher") return deny(`Caste breakdown data is not available for Teachers. ${teacherSuggestion}`);
     const groups = ["caste=SC", "caste=ST", "caste=BC", "caste=OC"].map(g => m.fairness.find(f => f.group === g));
     const [sc, st, bc, oc] = groups;
     if (sc && st && bc) {
@@ -252,6 +337,7 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 8. Migration ──
   if (/migrant|migration|migrate|వలస/.test(lower)) {
+    if (role !== "sed") return deny(`Migration risk analysis is only available for SED officials. ${role === "teacher" ? teacherSuggestion : role === "hm" ? hmSuggestion : districtSuggestion}`);
     const migrant    = m.fairness.find(f => f.group === "migration=migrant");
     const nonMigrant = m.fairness.find(f => f.group === "migration=non-migrant");
     if (migrant && nonMigrant) {
@@ -269,6 +355,12 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
   if (/reason|cause|why|dropout reason|factor|top reason|కారణం|ఎందుకు/.test(lower)) {
     const feats = m.feature_importance.slice(0, 7);
     const lines = feats.map((f, i) => `${i + 1}. **${featureLabel(f.feature)}** — ${(f.importance * 100).toFixed(1)}% weight`).join("\n");
+    // Teachers see the reasons with class-specific tip
+    if (role === "teacher") {
+      return lang === "en"
+        ? `Top dropout risk factors (live model data):\n${lines}\n\nThese factors apply to all students including your Grade ${userGrade ?? "—"} class. Check the Teacher Dashboard for student-level SHAP explanations.`
+        : `డ్రాపౌట్ ప్రమాదానికి అగ్ర కారణాలు:\n${feats.map((f, i) => `${i + 1}. **${featureLabel(f.feature)}** — ${(f.importance * 100).toFixed(1)}%`).join("\n")}`;
+    }
     return lang === "en"
       ? `Top dropout risk factors (XGBoost feature importance, live):\n${lines}\n\nMigration and socio-economic factors drive risk — attendance drops are often a symptom, not the root cause.`
       : `డ్రాపౌట్ ప్రమాదానికి అగ్ర కారణాలు (లైవ్):\n${feats.map((f, i) => `${i + 1}. **${featureLabel(f.feature)}** — ${(f.importance * 100).toFixed(1)}%`).join("\n")}`;
@@ -276,6 +368,32 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 10. Total students / schools coverage ──
   if (/total students|how many students|enrolled|total school|coverage|మొత్తం విద్యార్థులు|పాఠశాలలు/.test(lower)) {
+    // Teacher: scope to class
+    if (role === "teacher") {
+      const sc = mySchoolRow;
+      return lang === "en"
+        ? `👩‍🏫 **Your Class (Grade ${userGrade ?? "—"}) at ${sc?.school_name ?? userSchoolName ?? "your school"}**\n\nAs a Teacher, you have access to class-level insights. Here's what I can tell you from the data:\n\n**Top dropout risk factors** apply to all students, including yours:\n${m.feature_importance.slice(0, 5).map((f, i) => `${i + 1}. ${featureLabel(f.feature)} — ${(f.importance * 100).toFixed(1)}%`).join("\n")}\n\nTry asking: "top reasons" for detailed dropout drivers, "schemes" for support programs, or "attendance" for risk impact.`
+        : `👩‍🏫 **మీ తరగతి (గ్రేడ్ ${userGrade ?? "—"})**\n\nడ్రాపౌట్ ప్రమాద కారణాలు తెలుసుకోవడానికి "top reasons" అడగండి.`;
+    }
+    // HM: scope to school
+    if (role === "hm") {
+      if (mySchoolRow) {
+        return lang === "en"
+          ? `🏫 **${mySchoolRow.school_name}** — your school\n• Students: **${fmt(mySchoolRow.n_students)}**\n• Flagged: **${fmt(mySchoolRow.n_flagged)}** (${pct(mySchoolRow.n_flagged / mySchoolRow.n_students)})\n• Avg risk: ${pct(mySchoolRow.avg_risk)}`
+          : `🏫 **మీ పాఠశాల**\n• విద్యార్థులు: **${fmt(mySchoolRow.n_students)}**\n• ప్రమాదంలో: **${fmt(mySchoolRow.n_flagged)}**`;
+      }
+      return lang === "en"
+        ? `Your school enrollment data is available on the HM Dashboard.`
+        : `మీ పాఠశాల డేటా HM డ్యాష్‌బోర్డ్‌లో అందుబాటులో ఉంది.`;
+    }
+    // District: scope to district
+    if (role === "district" && userDistrict && d.districts[userDistrict]) {
+      const ds = d.districts[userDistrict];
+      return lang === "en"
+        ? `📍 **${userDistrict} District** — your district\n• Schools: **${fmt(ds.nSchools)}**\n• Students enrolled: **${fmt(ds.nStudents)}**\n• Flagged at-risk: **${fmt(ds.nFlagged)}** (${ds.pct.toFixed(1)}%)\n• Avg risk: ${pct(ds.avgRisk)}`
+        : `📍 **${userDistrict} జిల్లా**\n• పాఠశాలలు: **${fmt(ds.nSchools)}**\n• విద్యార్థులు: **${fmt(ds.nStudents)}**\n• ప్రమాదంలో: **${fmt(ds.nFlagged)}**`;
+    }
+    // SED: state-wide
     return lang === "en"
       ? `Live coverage — AY 2024-25:\n• **${fmt(d.totalStudents)}** students enrolled\n• **${fmt(d.totalSchools)}** schools across ${Object.keys(d.districts).length} districts\n• **${fmt(d.totalFlagged)}** flagged at-risk (${pct(d.totalFlagged / d.totalStudents)} flag rate)\n• Overall avg dropout risk: ${pct(d.overallAvgRisk)}`
       : `లైవ్ కవరేజ్:\n• **${fmt(d.totalStudents)}** విద్యార్థులు\n• **${fmt(d.totalSchools)}** పాఠశాలలు, ${Object.keys(d.districts).length} జిల్లాలు\n• **${fmt(d.totalFlagged)}** ప్రమాదంలో (${pct(d.totalFlagged / d.totalStudents)})`;
@@ -290,6 +408,7 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 13. SHAP / model explainability ──
   if (/shap|explain|why this|driver|వివరణ/.test(lower)) {
+    if (role === "teacher") return deny(`Model explainability details are not available for Teachers. ${teacherSuggestion}`);
     return lang === "en"
       ? "**SHAP (SHapley Additive exPlanations)** decomposes each student's risk score into individual feature contributions. Example: 'migration_flag +34%, attendance_rate +22%'. Every prediction is auditable — teachers can contest any flag through the intervention portal."
       : "**SHAP** ప్రతి విద్యార్థి ప్రమాద స్కోర్‌ను ఫీచర్‌ల సహాయంగా విభజిస్తుంది. మోడల్‌ను పారదర్శకంగా చేస్తుంది.";
@@ -297,6 +416,11 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
 
   // ── 14. Attendance ──
   if (/attendance|absent|హాజరు|గైర్హాజరు/.test(lower)) {
+    if (role === "teacher") {
+      return lang === "en"
+        ? `Attendance is a **top predictor** of dropout risk for your Grade ${userGrade ?? "—"} students.\n• Students below 50% attendance have 3× higher dropout probability\n• 15+ consecutive absent days triggers a Critical flag regardless of overall rate\n• Attendance rate contributes ${((m.feature_importance.find(f => f.feature === "attendance_rate")?.importance ?? 0) * 100).toFixed(1)}% to the risk model\n\nAttendance data syncs daily from the state LEAP portal. Type "top reasons" to see how attendance compares to other risk factors.`
+        : `మీ Grade ${userGrade ?? "—"} విద్యార్థులకు హాజరు ప్రధాన అంచనా కారకం. 50% కంటే తక్కువ హాజరు = 3× అధిక ప్రమాదం.`;
+    }
     return lang === "en"
       ? `Attendance is among the **top predictors**. From live data:\n• Flag rate across ${fmt(d.totalSchools)} schools avg risk: ${pct(d.overallAvgRisk)}\n• Students below 50% attendance have 3× higher dropout probability\n• 15+ consecutive absent days triggers Critical flag regardless of overall rate\n• Attendance data syncs daily from state LEAP portal`
       : "హాజరు అగ్ర అంచనా కారకాల్లో ఒకటి. 50% కంటే తక్కువ హాజరు = 3× అధిక ప్రమాదం.";
@@ -317,19 +441,54 @@ function answer(query: string, lang: "en" | "te", d: LiveData | null): string {
   }
 
   // ── fallback ──
+  const roleTips: Record<Role, { en: string; te: string }> = {
+    teacher: {
+      en: `📌 **Your Class Only** (Grade ${userGrade ?? "—"})\n• "my class" — your grade overview\n• "critical students" — at-risk counts in context\n• "top reasons" — why students drop out\n• "attendance" — how attendance affects risk\n• "schemes" — support programs available`,
+      te: `📌 **మీ తరగతి మాత్రమే** (గ్రేడ్ ${userGrade ?? "—"})\n• "నా తరగతి" — మీ గ్రేడ్ అవలోకనం\n• "క్రిటికల్ విద్యార్థులు" — ప్రమాదం ఉన్నవారు\n• "డ్రాపౌట్ కారణాలు" — ఎందుకు వదిలేస్తారు\n• "హాజరు" — హాజరు ప్రభావం\n• "పథకాలు" — మద్దతు పథకాలు`,
+    },
+    hm: {
+      en: `📌 **Your School Only**\n• "my school" — full school stats\n• "critical students" — school-wide at-risk overview\n• "top reasons" — dropout drivers\n• "gender breakdown" — equity check\n• "attendance" — attendance & risk link\n• "model accuracy" — prediction reliability`,
+      te: `📌 **మీ పాఠశాల మాత్రమే**\n• "నా పాఠశాల" — పూర్తి గణాంకాలు\n• "క్రిటికల్ విద్యార్థులు" — ప్రమాద స్థితి\n• "డ్రాపౌట్ కారణాలు" — కారణాలు\n• "లింగ విభజన" — లింగ సమానత్వం\n• "మోడల్ ఖచ్చితత్వం" — అంచనా విశ్వసనీయత`,
+    },
+    district: {
+      en: `📌 **Your District Only**\n• "my district stats" — your district overview\n• "top mandals" — highest-risk mandals\n• "school-wise performance" — compare schools\n• "gender equity" — gender breakdown\n• "model performance" — accuracy metrics\n• "caste breakdown" — social equity`,
+      te: `📌 **మీ జిల్లా మాత్రమే**\n• "నా జిల్లా గణాంకాలు" — మీ జిల్లా అవలోకనం\n• "మండలాలు" — అత్యధిక ప్రమాద మండలాలు\n• "లింగ సమానత్వం" — లింగ విభజన\n• "మోడల్ పనితీరు" — ఖచ్చితత్వం\n• "కులం" — సామాజిక సమానత్వం`,
+    },
+    sed: {
+      en: `📌 **Statewide Analytics**\n• "top 5 districts" — highest-risk districts\n• "total students" — state coverage\n• "model accuracy metrics" — PR-AUC, ROC-AUC\n• "caste breakdown" — social equity statewide\n• "privacy" — DPDP Act compliance\n• "migration impact" — migration risk analysis`,
+      te: `📌 **రాష్ట్రస్థాయి విశ్లేషణ**\n• "అగ్ర జిల్లాలు" — అత్యధిక ప్రమాద జిల్లాలు\n• "మొత్తం విద్యార్థులు" — రాష్ట్ర కవరేజ్\n• "మోడల్ ఖచ్చితత్వం" — PR-AUC, ROC-AUC\n• "కులం" — సామాజిక సమానత్వం\n• "గోప్యత" — DPDP చట్టం\n• "వలస" — వలస ప్రమాద విశ్లేషణ`,
+    },
+  };
+  const tips = roleTips[role];
   return lang === "en"
-    ? `I can answer using live database data:\n• Counts: "how many critical students", "total students"\n• Districts: "Vizag stats", "Kurnool dropout rate", "top 5 districts"\n• Mandals: "top mandals"\n• Breakdowns: "boys vs girls", "caste breakdown", "migration"\n• Model: "accuracy", "top reasons", "SHAP"\n• Schemes, LEAP API, attendance rules\n\nTry one of the quick prompts below!`
-    : "నేను సమాధానం ఇవ్వగలను: విద్యార్థి సంఖ్య, జిల్లా గణాంకాలు, లింగ విభజన, డ్రాపౌట్ కారణాలు, మోడల్ ఖచ్చితత్వం, పథకాలు.";
+    ? `I can answer using live database data. ${userName ? `${userName}, ` : ""}here's what I can help with as a **${role === "teacher" ? "Teacher" : role === "hm" ? "Head Master" : role === "district" ? "District Officer" : "SED Official"}**:\n\n${tips.en}\n\nType a question or try one of the quick prompts below!`
+    : `నేను లైవ్ డేటాతో సమాధానం ఇవ్వగలను. ${roleTips[role].te}`;
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
-const QUICK_PROMPTS = {
-  en: ["How many critical students?", "Vizag district stats", "Top 5 districts", "Boys vs Girls risk", "Top dropout reasons"],
-  te: ["క్రిటికల్ విద్యార్థులు ఎంతమంది?", "విశాఖ జిల్లా గణాంకాలు", "అగ్ర 5 జిల్లాలు", "అబ్బాయిలు vs అమ్మాయిలు", "డ్రాపౌట్ కారణాలు"],
+const ROLE_QUICK_PROMPTS: Record<Role, { en: string[]; te: string[] }> = {
+  teacher: {
+    en: ["My class risk status", "Critical students count", "Top dropout reasons", "How to help at-risk students?", "Attendance alerts"],
+    te: ["నా తరగతి ప్రమాద స్థితి", "క్రిటికల్ విద్యార్థులు ఎంతమంది?", "డ్రాపౌట్ కారణాలు", "ప్రమాదంలో ఉన్న విద్యార్థులకు సహాయం?", "హాజరు హెచ్చరికలు"],
+  },
+  hm: {
+    en: ["School-wide risk overview", "Critical students in my school", "Top dropout reasons", "Gender breakdown", "Model accuracy"],
+    te: ["పాఠశాల ప్రమాద అవలోకనం", "క్రిటికల్ విద్యార్థులు", "డ్రాపౌట్ కారణాలు", "లింగ విభజన", "మోడల్ ఖచ్చితత్వం"],
+  },
+  district: {
+    en: ["My district stats", "Top mandals by flagged", "School-wise risk comparison", "Gender equity breakdown", "Model performance"],
+    te: ["నా జిల్లా గణాంకాలు", "అత్యధిక మండలాలు", "పాఠశాలల పోలిక", "లింగ సమానత్వం", "మోడల్ పనితీరు"],
+  },
+  sed: {
+    en: ["Top 5 districts by flagged", "Model accuracy metrics", "Caste equity breakdown", "Data privacy & DPDP", "Statewide coverage"],
+    te: ["అగ్ర 5 జిల్లాలు", "మోడల్ ఖచ్చితత్వం", "కులం విభజన", "డేటా గోప్యత & DPDP", "రాష్ట్ర కవరేజ్"],
+  },
 };
 
 export default function FloatingChatbot() {
   const { lang } = useLang();
+  const { user } = useAuth();
+  const role: Role    = user?.role ?? "teacher";
   const [open, setOpen]       = useState(false);
   const [liveData, setLiveData] = useState<LiveData | null>(null);
   const [loadErr, setLoadErr] = useState(false);
@@ -391,37 +550,91 @@ export default function FloatingChatbot() {
 
   useEffect(() => {
     if (open && msgs.length === 0) {
+      const roleLabel = role === "teacher" ? "Teacher" : role === "hm" ? "Head Master" : role === "district" ? "District Officer" : "SED Official";
+      const greetingTips: Record<Role, string> = {
+        teacher: `Ask about your class (Grade ${user?.grade ?? "—"}), at-risk students in your class, dropout reasons, attendance alerts, or support schemes.`,
+        hm:      `Ask about your school's risk overview, critical students, gender/caste breakdown, dropout reasons, attendance, or model accuracy.`,
+        district:`Ask about your district stats, mandal-level performance, school comparisons, gender equity, or model performance metrics.`,
+        sed:     `Ask about statewide coverage, top districts, model accuracy, caste equity, migration impact, or data privacy compliance.`,
+      };
       setMsgs([{
         role: "bot",
         text: lang === "en"
-          ? "Hi! I'm the Stay-In School AI assistant. I have live access to the database — ask me about student counts, district stats, gender/caste breakdown, dropout reasons, model accuracy, or specific districts like Vizag or Kurnool."
-          : "నమస్కారం! నేను Stay-In School AI సహాయకుడిని. నేను నేరుగా డేటాబేస్ నుండి లైవ్ డేటాను యాక్సెస్ చేస్తాను — విద్యార్థి సంఖ్య, జిల్లా గణాంకాలు, లింగ/కులం విభజన, డ్రాపౌట్ కారణాలు గురించి అడగండి.",
+          ? `Hi${user?.name ? " " + user.name : ""}! I'm the **Stay-In School AI** assistant. As a **${roleLabel}**, I've tailored the view for you. ${greetingTips[role]}\n\nTry one of the quick prompts below or type your own question!`
+          : role === "teacher"
+          ? `నమస్కారం${user?.name ? " " + user.name : ""}! నేను **Stay-In School AI** సహాయకుడిని. **${roleLabel}**గా, మీ తరగతి (గ్రేడ్ ${user?.grade ?? "—"}) గురించి అడగండి.`
+          : `నమస్కారం${user?.name ? " " + user.name : ""}! నేను **Stay-In School AI** సహాయకుడిని. **${roleLabel}**గా, మీ కోసం వీక్షణను సర్దుబాటు చేసాను.`,
       }]);
     }
-  }, [open, lang, msgs.length]);
+  }, [open, lang, msgs.length, role, user?.name]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, typing]);
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim()) return;
     setMsgs(m => [...m, { role: "user", text }]);
     setInput("");
     setTyping(true);
-    setTimeout(() => {
+    try {
+      const resp = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: text,
+          role,
+          userName: user?.name ?? "",
+          userDistrict: user?.district ?? "",
+          userSchoolName: user?.schoolName ?? "",
+          userGrade: user?.grade,
+        }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
       setTyping(false);
-      setMsgs(m => [...m, { role: "bot", text: answer(text, lang, liveData) }]);
-    }, 500);
+      setMsgs(m => [...m, { role: "bot", text: data.reply }]);
+    } catch {
+      setTyping(false);
+      setMsgs(m => [...m, { role: "bot", text: answer(text, lang, liveData, role, user?.name ?? "", user?.district ?? "", user?.schoolName ?? "", user?.grade) }]);
+    }
   };
 
-  const statusLabel = liveData
-    ? lang === "en"
+  const statusLabel = (() => {
+    if (!liveData) return loadErr
+      ? (lang === "en" ? "Data load failed" : "డేటా లోడ్ విఫలమైంది")
+      : (lang === "en" ? "Loading live data…" : "లైవ్ డేటా లోడ్ అవుతోంది…");
+    const ms = user?.schoolName
+      ? liveData.topSchools.find(s => (s.school_name ?? "").toLowerCase() === (user.schoolName ?? "").toLowerCase())
+      : null;
+    if (role === "teacher") {
+      if (ms) {
+        return lang === "en" ? `${ms.school_name}` : `${ms.school_name}`;
+      }
+      return lang === "en" ? `Your school` : `మీ పాఠశాల`;
+    }
+    if (role === "hm") {
+      if (ms) {
+        return lang === "en"
+          ? `${ms.school_name} · ${ms.n_students.toLocaleString("en-IN")} students · ${ms.n_flagged} flagged`
+          : `${ms.school_name} · ${ms.n_students.toLocaleString("en-IN")} విద్యార్థులు · ${ms.n_flagged} ప్రమాదం`;
+      }
+      return lang === "en"
+        ? `Your school · ${liveData.totalStudents.toLocaleString("en-IN")} students`
+        : `మీ పాఠశాల · ${liveData.totalStudents.toLocaleString("en-IN")} విద్యార్థులు`;
+    }
+    if (role === "district" && user?.district) {
+      const ds = liveData.districts[user.district];
+      if (ds) {
+        return lang === "en"
+          ? `${user.district} · ${ds.nStudents.toLocaleString("en-IN")} students · ${ds.nSchools} schools`
+          : `${user.district} · ${ds.nStudents.toLocaleString("en-IN")} విద్యార్థులు · ${ds.nSchools} పాఠశాలలు`;
+      }
+    }
+    return lang === "en"
       ? `${liveData.totalStudents.toLocaleString("en-IN")} students · ${Object.keys(liveData.districts).length} districts`
-      : `${liveData.totalStudents.toLocaleString("en-IN")} విద్యార్థులు · ${Object.keys(liveData.districts).length} జిల్లాలు`
-    : loadErr
-    ? (lang === "en" ? "Data load failed" : "డేటా లోడ్ విఫలమైంది")
-    : (lang === "en" ? "Loading live data…" : "లైవ్ డేటా లోడ్ అవుతోంది…");
+      : `${liveData.totalStudents.toLocaleString("en-IN")} విద్యార్థులు · ${Object.keys(liveData.districts).length} జిల్లాలు`;
+  })();
 
   return (
     <>
@@ -496,17 +709,15 @@ export default function FloatingChatbot() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Quick prompts */}
-          {msgs.length <= 1 && (
-            <div className="px-3 py-2 bg-zinc-50 border-t border-zinc-100 flex flex-wrap gap-1.5 shrink-0">
-              {QUICK_PROMPTS[lang].map(p => (
-                <button key={p} onClick={() => send(p)}
-                  className="text-[10px] bg-white border border-zinc-200 text-zinc-600 rounded-full px-2.5 py-1 hover:border-[color:var(--ap-navy)] hover:text-[color:var(--ap-navy)] transition">
-                  {p}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Quick prompts — always visible */}
+          <div className="px-3 py-2 bg-zinc-50 border-t border-zinc-100 flex flex-wrap gap-1.5 shrink-0">
+            {ROLE_QUICK_PROMPTS[role][lang].map(p => (
+              <button key={p} onClick={() => send(p)}
+                className="text-[10px] bg-white border border-zinc-200 text-zinc-600 rounded-full px-2.5 py-1 hover:border-[color:var(--ap-navy)] hover:text-[color:var(--ap-navy)] transition">
+                {p}
+              </button>
+            ))}
+          </div>
 
           {/* Input */}
           <form onSubmit={e => { e.preventDefault(); send(input); }}
