@@ -66,13 +66,19 @@ export default function TeacherDashboard({
     } catch { /* ignore */ }
   }, [user, router]);
 
-  const critical = roster.filter((r) => r.tier === "Critical");
-  const high = roster.filter((r) => r.tier === "High");
-  const flagged = roster.filter((r) => r.tier !== "Low");
-  const trend = makeTrend(roster);
-  const avgAtt = roster.length > 0 ? roster.reduce((s, r) => s + r.attendance_rate, 0) / roster.length : 0;
+  // Filter by teacher's assigned grade
+  const teacherGrade = user?.role === "teacher" ? user.grade : null;
+  const filteredRoster = teacherGrade
+    ? roster.map((r) => ({ ...r, grade: r.grade ?? rosterExtras(r.child_sno).grade })).filter((r) => r.grade === teacherGrade)
+    : roster;
 
-  const displayed = filter === "All" ? roster : roster.filter((r) => r.tier === filter);
+  const critical = filteredRoster.filter((r) => r.tier === "Critical");
+  const high = filteredRoster.filter((r) => r.tier === "High");
+  const flagged = filteredRoster.filter((r) => r.tier !== "Low");
+  const trend = makeTrend(filteredRoster);
+  const avgAtt = filteredRoster.length > 0 ? filteredRoster.reduce((s, r) => s + r.attendance_rate, 0) / filteredRoster.length : 0;
+
+  const displayed = filter === "All" ? filteredRoster : filteredRoster.filter((r) => r.tier === filter);
 
   return (
     <div className="space-y-6">
@@ -81,7 +87,10 @@ export default function TeacherDashboard({
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">{T.teacherView.title[lang]}</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
-            {school?.school_name ?? (lang === "en" ? "My School" : "నా పాఠశాల")} · {school?.district_name} · {T.common.ay[lang]}
+            {school?.school_name ?? (lang === "en" ? "My School" : "నా పాఠశాల")}
+            {teacherGrade && ` · ${lang === "en" ? "Grade" : "తరగతి"} ${teacherGrade}`}
+            {school?.district_name && ` · ${school.district_name}`}
+            {` · ${T.common.ay[lang]}`}
           </p>
         </div>
         <div className="text-xs text-zinc-500 bg-zinc-100 rounded-lg px-3 py-2">
@@ -107,8 +116,8 @@ export default function TeacherDashboard({
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: T.common.totalStudents[lang], value: fmtInt(roster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: lang === "en" ? "In my class" : "నా తరగతిలో", info: "All students enrolled in your class for AY 2024-25. Source: School Education Dept FIN_YEAR dataset." },
-          { label: T.common.flagged[lang], value: fmtInt(flagged.length), icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, sub: `${pctFormat(flagged.length / Math.max(roster.length, 1), 0)} ${lang === "en" ? "of class" : "తరగతిలో"}`, tone: "warn", info: "Students with predicted dropout probability ≥51% (Medium, High, or Critical tier). Review their profiles and log an intervention." },
+          { label: T.common.totalStudents[lang], value: fmtInt(filteredRoster.length), icon: <Users className="h-5 w-5 text-zinc-400" />, sub: lang === "en" ? "In my class" : "నా తరగతిలో", info: "All students enrolled in your class for AY 2024-25. Source: School Education Dept FIN_YEAR dataset." },
+          { label: T.common.flagged[lang], value: fmtInt(flagged.length), icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, sub: `${pctFormat(flagged.length / Math.max(filteredRoster.length, 1), 0)} ${lang === "en" ? "of class" : "తరగతిలో"}`, tone: "warn", info: "Students with predicted dropout probability ≥51% (Medium, High, or Critical tier). Review their profiles and log an intervention." },
           { label: T.tier.Critical[lang], value: fmtInt(critical.length), icon: <AlertTriangle className="h-5 w-5 text-red-500" />, sub: lang === "en" ? "Needs immediate action" : "తక్షణ చర్య అవసరం", tone: "bad", info: "Students with risk score ≥85%. RTGS protocol: log an intervention within 48 hours. Contact parent and assign ward volunteer." },
           { label: T.common.avgRisk[lang], value: pctFormat(avgAtt, 0), icon: <Activity className="h-5 w-5 text-emerald-500" />, sub: lang === "en" ? "Class average" : "తరగతి సగటు", tone: avgAtt >= 0.75 ? "good" : "warn", info: "Mean attendance rate across all students in your class. Below 75% triggers amber alert; below 60% requires HM escalation." },
         ].map((s) => (
@@ -147,7 +156,7 @@ export default function TeacherDashboard({
       </div>
 
       {/* Multi-metric analytics */}
-      <StudentAnalyticsPanel roster={roster} />
+      <StudentAnalyticsPanel roster={filteredRoster} />
 
       {/* Roster */}
       <div className="rounded-xl border bg-white overflow-hidden">
@@ -169,7 +178,7 @@ export default function TeacherDashboard({
                   )}
                 >
                   {idx === 0 ? T.common.filter[lang] : T.tier[realTier as RiskTier][lang]}
-                  {realTier !== "All" && ` (${roster.filter((r) => r.tier === realTier).length})`}
+                  {realTier !== "All" && ` (${filteredRoster.filter((r) => r.tier === realTier).length})`}
                 </button>
               );
             })}

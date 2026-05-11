@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { useLang } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import type { School, Metrics } from "@/lib/types";
 import { fmtInt, pctFormat } from "@/lib/utils";
 import {
@@ -27,6 +28,8 @@ type Props = { school: School | null; metrics: Metrics };
 
 export default function TeacherDataView({ school, metrics }: Props) {
   const { lang } = useLang();
+  const { user } = useAuth();
+  const teacherGrade = user?.role === "teacher" ? user.grade : null;
   const [uploads, setUploads] = useState<Record<string, FileEntry>>({});
   const [dragging, setDragging] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});

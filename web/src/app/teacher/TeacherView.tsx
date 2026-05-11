@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { School, RosterStudent, RiskTier } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
 import { useLang, T } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import { fmtInt, pctFormat, cn } from "@/lib/utils";
 import { Search, Users, AlertCircle, Download } from "lucide-react";
 
@@ -22,13 +23,15 @@ function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
 
 export default function TeacherView({ schools }: { schools: School[] }) {
   const { lang } = useLang();
+  const { user } = useAuth();
+  const teacherGrade = user?.role === "teacher" && user.grade ? String(user.grade) : "All";
   const [selectedId, setSelectedId] = useState<number>(schools[0]?.school_id ?? 0);
   const [roster, setRoster] = useState<RosterStudent[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<RiskTier | "All">("All");
-  const [gradeFilter, setGradeFilter] = useState<string>("All");
+  const [gradeFilter, setGradeFilter] = useState<string>(teacherGrade);
 
   const selected = schools.find((s) => s.school_id === selectedId);
 

@@ -10,6 +10,7 @@ export interface UserSession {
   schoolId?: number;
   schoolName?: string;
   district?: string;
+  grade?: number;
 }
 
 const DEMO_SCHOOL_ID = 28161790952;
@@ -25,6 +26,7 @@ export const DUMMY_USERS: Record<string, UserSession & { password: string }> = {
     schoolId: DEMO_SCHOOL_ID,
     schoolName: DEMO_SCHOOL_NAME,
     district: DEMO_DISTRICT,
+    grade: 8,
   },
   "principal@zphs.ap.gov.in": {
     email: "principal@zphs.ap.gov.in",

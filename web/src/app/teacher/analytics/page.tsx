@@ -104,65 +104,69 @@ export default function TeacherAnalyticsPage() {
     }
   }, [user]);
 
+  // Filter students by teacher's assigned grade
+  const teacherGrade = user?.role === "teacher" ? user.grade : null;
+  const filteredStudents = teacherGrade ? students.filter(s => s.grade === teacherGrade) : students;
+
   // ── derived data ────────────────────────────────────────────────────────────
 
-  const criticalCount  = students.filter(s => s.tier === "Critical").length;
-  const highCount      = students.filter(s => s.tier === "High").length;
-  const migrantCount   = students.filter(s => (s as any).migration_flag).length;
-  const transportCount = students.filter(s => (s as any).transport_allowance).length;
-  const avgAttendance  = students.length
-    ? students.reduce((a, s) => a + s.attendance_rate, 0) / students.length : 0;
+  const criticalCount  = filteredStudents.filter(s => s.tier === "Critical").length;
+  const highCount      = filteredStudents.filter(s => s.tier === "High").length;
+  const migrantCount   = filteredStudents.filter(s => (s as any).migration_flag).length;
+  const transportCount = filteredStudents.filter(s => (s as any).transport_allowance).length;
+  const avgAttendance  = filteredStudents.length
+    ? filteredStudents.reduce((a, s) => a + s.attendance_rate, 0) / filteredStudents.length : 0;
 
   const tierData = [
     { name: T.tier.Critical[lang], value: criticalCount },
     { name: T.tier.High[lang],     value: highCount },
-    { name: T.tier.Medium[lang],   value: students.filter(s => s.tier === "Medium").length },
-    { name: T.tier.Low[lang],      value: students.filter(s => s.tier === "Low").length },
+    { name: T.tier.Medium[lang],   value: filteredStudents.filter(s => s.tier === "Medium").length },
+    { name: T.tier.Low[lang],      value: filteredStudents.filter(s => s.tier === "Low").length },
   ];
 
   const genderRiskData = ["Male", "Female"].map(g => ({
     name: g === "Male" ? (lang === "en" ? "Male" : "పురుషుడు") : (lang === "en" ? "Female" : "స్త్రీ"),
-    critical: students.filter(s => s.gender_label === g && s.tier === "Critical").length,
-    high:     students.filter(s => s.gender_label === g && s.tier === "High").length,
-    safe:     students.filter(s => s.gender_label === g && (s.tier === "Low" || s.tier === "Medium")).length,
+    critical: filteredStudents.filter(s => s.gender_label === g && s.tier === "Critical").length,
+    high:     filteredStudents.filter(s => s.gender_label === g && s.tier === "High").length,
+    safe:     filteredStudents.filter(s => s.gender_label === g && (s.tier === "Low" || s.tier === "Medium")).length,
   }));
 
   const factorData = [
-    { factorId: "attendance" as const, name: lang === "en" ? "Low Attendance" : "తక్కువ హాజరు",   value: students.filter(s => s.attendance_rate < 0.6).length,           icon: Activity },
-    { factorId: "marks"      as const, name: lang === "en" ? "Low Marks"      : "తక్కువ మార్కులు", value: students.filter(s => (s.fa_avg || 0) < 40).length,              icon: GraduationCap },
-    { factorId: "migration"  as const, name: lang === "en" ? "Migration"       : "వలసలు",           value: migrantCount,                                                    icon: Plane },
-    { factorId: "economic"   as const, name: lang === "en" ? "Economic"        : "ఆర్థికం",         value: students.filter(s => (s as any).family_income_bracket < 2).length, icon: AlertTriangle },
+    { factorId: "attendance" as const, name: lang === "en" ? "Low Attendance" : "Low Attendance",   value: filteredStudents.filter(s => s.attendance_rate < 0.6).length,           icon: Activity },
+    { factorId: "marks"      as const, name: lang === "en" ? "Low Marks"      : "Low Marks", value: filteredStudents.filter(s => (s.fa_avg || 0) < 40).length,              icon: GraduationCap },
+    { factorId: "migration"  as const, name: lang === "en" ? "Migration"       : "Migration",           value: migrantCount,                                                    icon: Plane },
+    { factorId: "economic"   as const, name: lang === "en" ? "Economic"        : "Economic",         value: filteredStudents.filter(s => (s as any).family_income_bracket < 2).length, icon: AlertTriangle },
   ].sort((a, b) => b.value - a.value);
 
   const gradeRiskData = [6, 7, 8, 9, 10].map(g => ({
     grade:    `${lang === "en" ? "Class" : "తరగతి"} ${g}`,
-    critical: students.filter(s => s.grade === g && s.tier === "Critical").length,
-    high:     students.filter(s => s.grade === g && s.tier === "High").length,
-    total:    students.filter(s => s.grade === g).length,
+    critical: filteredStudents.filter(s => s.grade === g && s.tier === "Critical").length,
+    high:     filteredStudents.filter(s => s.grade === g && s.tier === "High").length,
+    total:    filteredStudents.filter(s => s.grade === g).length,
   })).filter(d => d.total > 0);
 
   const casteData = [
-    { name: "OC", value: students.filter(s => (s as any).caste_clean === 1 && s.tier !== "Low").length },
-    { name: "BC", value: students.filter(s => (s as any).caste_clean === 2 && s.tier !== "Low").length },
-    { name: "SC", value: students.filter(s => (s as any).caste_clean === 3 && s.tier !== "Low").length },
-    { name: "ST", value: students.filter(s => (s as any).caste_clean === 4 && s.tier !== "Low").length },
+    { name: "OC", value: filteredStudents.filter(s => (s as any).caste_clean === 1 && s.tier !== "Low").length },
+    { name: "BC", value: filteredStudents.filter(s => (s as any).caste_clean === 2 && s.tier !== "Low").length },
+    { name: "SC", value: filteredStudents.filter(s => (s as any).caste_clean === 3 && s.tier !== "Low").length },
+    { name: "ST", value: filteredStudents.filter(s => (s as any).caste_clean === 4 && s.tier !== "Low").length },
   ];
 
   // Migration risk comparison
   const migrationRiskData = [
     {
       name: lang === "en" ? "Migrant" : "వలస",
-      critical: students.filter(s => (s as any).migration_flag && s.tier === "Critical").length,
-      high:     students.filter(s => (s as any).migration_flag && s.tier === "High").length,
-      safe:     students.filter(s => (s as any).migration_flag && (s.tier === "Low" || s.tier === "Medium")).length,
+      critical: filteredStudents.filter(s => (s as any).migration_flag && s.tier === "Critical").length,
+      high:     filteredStudents.filter(s => (s as any).migration_flag && s.tier === "High").length,
+      safe:     filteredStudents.filter(s => (s as any).migration_flag && (s.tier === "Low" || s.tier === "Medium")).length,
       total:    migrantCount,
     },
     {
       name: lang === "en" ? "Non-Migrant" : "స్థానిక",
-      critical: students.filter(s => !(s as any).migration_flag && s.tier === "Critical").length,
-      high:     students.filter(s => !(s as any).migration_flag && s.tier === "High").length,
-      safe:     students.filter(s => !(s as any).migration_flag && (s.tier === "Low" || s.tier === "Medium")).length,
-      total:    students.length - migrantCount,
+      critical: filteredStudents.filter(s => !(s as any).migration_flag && s.tier === "Critical").length,
+      high:     filteredStudents.filter(s => !(s as any).migration_flag && s.tier === "High").length,
+      safe:     filteredStudents.filter(s => !(s as any).migration_flag && (s.tier === "Low" || s.tier === "Medium")).length,
+      total:    filteredStudents.length - migrantCount,
     },
   ];
 
@@ -170,23 +174,23 @@ export default function TeacherAnalyticsPage() {
   const transportRiskData = [
     {
       name: lang === "en" ? "With Transport" : "రవాణా ఉంది",
-      critical: students.filter(s => (s as any).transport_allowance && s.tier === "Critical").length,
-      high:     students.filter(s => (s as any).transport_allowance && s.tier === "High").length,
-      safe:     students.filter(s => (s as any).transport_allowance && (s.tier === "Low" || s.tier === "Medium")).length,
+      critical: filteredStudents.filter(s => (s as any).transport_allowance && s.tier === "Critical").length,
+      high:     filteredStudents.filter(s => (s as any).transport_allowance && s.tier === "High").length,
+      safe:     filteredStudents.filter(s => (s as any).transport_allowance && (s.tier === "Low" || s.tier === "Medium")).length,
     },
     {
       name: lang === "en" ? "No Transport" : "రవాణా లేదు",
-      critical: students.filter(s => !(s as any).transport_allowance && s.tier === "Critical").length,
-      high:     students.filter(s => !(s as any).transport_allowance && s.tier === "High").length,
-      safe:     students.filter(s => !(s as any).transport_allowance && (s.tier === "Low" || s.tier === "Medium")).length,
+      critical: filteredStudents.filter(s => !(s as any).transport_allowance && s.tier === "Critical").length,
+      high:     filteredStudents.filter(s => !(s as any).transport_allowance && s.tier === "High").length,
+      safe:     filteredStudents.filter(s => !(s as any).transport_allowance && (s.tier === "Low" || s.tier === "Medium")).length,
     },
   ];
 
   // Migration by grade
   const migrationByGrade = [6, 7, 8, 9, 10].map(g => ({
     grade:     `${g}th`,
-    migrant:   students.filter(s => s.grade === g && (s as any).migration_flag).length,
-    nonMigrant:students.filter(s => s.grade === g && !(s as any).migration_flag).length,
+    migrant:   filteredStudents.filter(s => s.grade === g && (s as any).migration_flag).length,
+    nonMigrant:filteredStudents.filter(s => s.grade === g && !(s as any).migration_flag).length,
   })).filter(d => d.migrant + d.nonMigrant > 0);
 
   // ── PDF export ──────────────────────────────────────────────────────────────
@@ -207,7 +211,7 @@ export default function TeacherAnalyticsPage() {
       startY: 50,
       head: [["Metric", "Value"]],
       body: [
-        ["Total Students",    students.length],
+        ["Total Students",    filteredStudents.length],
         ["Critical Risk",     criticalCount],
         ["High Risk",         highCount],
         ["Migrant Students",  migrantCount],
@@ -275,7 +279,7 @@ export default function TeacherAnalyticsPage() {
       {/* Summary stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
-          { label: lang === "en" ? "Total"       : "మొత్తం",          value: fmtInt(students.length), icon: Users,          bg: "bg-blue-50",    fg: "text-blue-600"    },
+          { label: lang === "en" ? "Total"       : "మొత్తం",          value: fmtInt(filteredStudents.length), icon: Users,          bg: "bg-blue-50",    fg: "text-blue-600"    },
           { label: lang === "en" ? "Critical"    : "అత్యవసరం",         value: fmtInt(criticalCount),   icon: AlertTriangle,  bg: "bg-red-50",     fg: "text-red-600"     },
           { label: lang === "en" ? "High Risk"   : "అధిక ప్రమాదం",     value: fmtInt(highCount),       icon: TrendingDown,   bg: "bg-orange-50",  fg: "text-orange-600"  },
           { label: lang === "en" ? "Avg Att."    : "సగటు హాజరు",       value: pctFormat(avgAttendance, 0), icon: Activity,   bg: "bg-emerald-50", fg: "text-emerald-600" },
@@ -499,19 +503,19 @@ export default function TeacherAnalyticsPage() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-semibold text-amber-900">{lang === "en" ? "Migration" : "వలస"}</div>
-                <div className="text-lg font-bold text-amber-700">{migrantCount} <span className="text-xs font-normal text-amber-500">/ {students.length}</span></div>
+                <div className="text-lg font-bold text-amber-700">{migrantCount} <span className="text-xs font-normal text-amber-500">/ {filteredStudents.length}</span></div>
               </div>
               <div className="h-2 rounded-full bg-amber-200 overflow-hidden">
-                <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${students.length ? (migrantCount / students.length) * 100 : 0}%` }} />
+                <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${filteredStudents.length ? (migrantCount / filteredStudents.length) * 100 : 0}%` }} />
               </div>
               <div className="flex justify-between text-[10px] text-amber-600 mt-1">
                 <span>{lang === "en" ? "Migrant students" : "వలస విద్యార్థులు"}</span>
-                <span className="font-bold">{students.length ? ((migrantCount / students.length) * 100).toFixed(1) : 0}%</span>
+                <span className="font-bold">{filteredStudents.length ? ((migrantCount / filteredStudents.length) * 100).toFixed(1) : 0}%</span>
               </div>
               <div className="mt-2 text-xs text-amber-700">
                 {lang === "en"
-                  ? `${students.filter(s => (s as any).migration_flag && s.tier === "Critical").length} migrant students are in the Critical tier — schedule home visits before harvest season.`
-                  : `${students.filter(s => (s as any).migration_flag && s.tier === "Critical").length} వలస విద్యార్థులు క్రిటికల్ స్థాయిలో ఉన్నారు.`}
+                  ? `${filteredStudents.filter(s => (s as any).migration_flag && s.tier === "Critical").length} migrant students are in the Critical tier — schedule home visits before harvest season.`
+                  : `${filteredStudents.filter(s => (s as any).migration_flag && s.tier === "Critical").length} వలస విద్యార్థులు క్రిటికల్ స్థాయిలో ఉన్నారు.`}
               </div>
             </div>
           </div>
@@ -524,19 +528,19 @@ export default function TeacherAnalyticsPage() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-semibold text-sky-900">{lang === "en" ? "Transport Allowance" : "రవాణా భత్యం"}</div>
-                <div className="text-lg font-bold text-sky-700">{transportCount} <span className="text-xs font-normal text-sky-500">/ {students.length}</span></div>
+                <div className="text-lg font-bold text-sky-700">{transportCount} <span className="text-xs font-normal text-sky-500">/ {filteredStudents.length}</span></div>
               </div>
               <div className="h-2 rounded-full bg-sky-200 overflow-hidden">
-                <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${students.length ? (transportCount / students.length) * 100 : 0}%` }} />
+                <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${filteredStudents.length ? (transportCount / filteredStudents.length) * 100 : 0}%` }} />
               </div>
               <div className="flex justify-between text-[10px] text-sky-600 mt-1">
                 <span>{lang === "en" ? "Students with allowance" : "భత్యం పొందిన విద్యార్థులు"}</span>
-                <span className="font-bold">{students.length ? ((transportCount / students.length) * 100).toFixed(1) : 0}%</span>
+                <span className="font-bold">{filteredStudents.length ? ((transportCount / filteredStudents.length) * 100).toFixed(1) : 0}%</span>
               </div>
               <div className="mt-2 text-xs text-sky-700">
                 {lang === "en"
-                  ? `${students.filter(s => !(s as any).transport_allowance && s.tier !== "Low").length} at-risk students have no transport allowance — consider flagging for scheme enrollment.`
-                  : `${students.filter(s => !(s as any).transport_allowance && s.tier !== "Low").length} ప్రమాదంలో ఉన్న విద్యార్థులకు రవాణా భత్యం లేదు.`}
+                  ? `${filteredStudents.filter(s => !(s as any).transport_allowance && s.tier !== "Low").length} at-risk students have no transport allowance — consider flagging for scheme enrollment.`
+                  : `${filteredStudents.filter(s => !(s as any).transport_allowance && s.tier !== "Low").length} ప్రమాదంలో ఉన్న విద్యార్థులకు रवाणा భత్యం లేదు.`}
               </div>
             </div>
           </div>

@@ -73,12 +73,13 @@ export default function StudentsListPage() {
 
   const filtered = students.filter(s => {
     const matchesSearch = String(s.child_sno).includes(search);
-    const matchesGender = genderFilter === "All" || 
+    const matchesGender = genderFilter === "All" ||
       (genderFilter === "Male" && s.gender_label === "Male") ||
       (genderFilter === "Female" && s.gender_label === "Female");
     const matchesTier = tierFilter === "All" || s.tier === tierFilter;
     const matchesGrade = gradeFilter === "All" || String(s.grade) === gradeFilter;
-    return matchesSearch && matchesGender && matchesTier && matchesGrade;
+    const matchesTeacherGrade = user?.role === "teacher" && user.grade ? s.grade === user.grade : true;
+    return matchesSearch && matchesGender && matchesTier && matchesGrade && matchesTeacherGrade;
   });
 
   const totalPages = Math.ceil(filtered.length / pageSize);
