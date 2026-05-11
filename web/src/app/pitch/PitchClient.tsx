@@ -55,7 +55,7 @@ function StatBox({ value, label, sub, color = "navy" }: { value: string; label: 
   );
 }
 
-type Metrics = { recall: number; precision: number; pr_auc: number; roc_auc: number; tp: number; fp: number; tier_counts: { Critical: number; High: number; Medium: number; Low: number }; threshold_current: number; feature_importance: { feature: string; importance: number }[] };
+type Metrics = { recall: number; precision: number; pr_auc: number; roc_auc: number; tp: number; fp: number; tn: number; test_oot: { recall: number; precision: number; pr_auc: number; roc_auc: number; tp: number; fp: number }; tier_counts: { Critical: number; High: number; Medium: number; Low: number }; threshold_current: number; feature_importance: { feature: string; importance: number }[] };
 
 export default function PitchClient() {
   const [slide, setSlide] = useState(0);

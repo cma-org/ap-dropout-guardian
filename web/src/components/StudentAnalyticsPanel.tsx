@@ -170,7 +170,7 @@ export default function StudentAnalyticsPanel({ roster }: { roster: RosterStuden
             <BarChart data={attBuckets} barSize={28}>
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} width={28} />
-              <Tooltip formatter={(v: number) => [`${v} students`]} />
+              <Tooltip formatter={(v) => [`${Number(v ?? 0)} students`]} />
               <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                 {attBuckets.map((_, i) => (
                   <Cell key={i} fill={i === 0 ? "#dc2626" : i === 1 ? "#f97316" : i === 2 ? "#eab308" : "#16a34a"} />
@@ -192,7 +192,7 @@ export default function StudentAnalyticsPanel({ roster }: { roster: RosterStuden
             <BarChart data={faBuckets} barSize={28}>
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} width={28} />
-              <Tooltip formatter={(v: number) => [`${v} students`]} />
+              <Tooltip formatter={(v) => [`${Number(v ?? 0)} students`]} />
               <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                 {faBuckets.map((_, i) => (
                   <Cell key={i} fill={i === 0 ? "#dc2626" : i === 1 ? "#f97316" : i === 2 ? "#eab308" : "#16a34a"} />
@@ -214,7 +214,7 @@ export default function StudentAnalyticsPanel({ roster }: { roster: RosterStuden
             <BarChart data={riskBuckets} barSize={28}>
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} width={28} />
-              <Tooltip formatter={(v: number) => [`${v} students`]} />
+              <Tooltip formatter={(v) => [`${Number(v ?? 0)} students`]} />
               <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                 {riskBuckets.map((_, i) => (
                   <Cell key={i} fill={riskColors[i]} />
@@ -271,7 +271,7 @@ export default function StudentAnalyticsPanel({ roster }: { roster: RosterStuden
                   <Cell key={i} fill={d.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [`${v} students`]} />
+              <Tooltip formatter={(v) => [`${Number(v ?? 0)} students`]} />
             </PieChart>
           </ResponsiveContainer>
         </div>

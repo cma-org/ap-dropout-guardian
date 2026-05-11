@@ -320,7 +320,7 @@ export default function SEDAnalyticsView({ schools }: { schools: School[] }) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 8, fill: "#94a3b8" }} axisLine={false} tickLine={false} angle={-35} textAnchor="end" height={50} />
                     <YAxis tickFormatter={v => `${(v * 100).toFixed(0)}%`} tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(v: number) => pctFormat(v, 1)} content={<CustomTooltip />} />
+                    <Tooltip formatter={(v) => pctFormat(Number(v ?? 0), 1)} content={<CustomTooltip />} />
                     <Bar dataKey="avgRisk" name="Avg Risk" radius={[4, 4, 0, 0]} barSize={20}>
                       {sortedByRisk.map((d, i) => (
                         <Cell key={i} fill={d.avgRisk > 0.12 ? "#dc2626" : d.avgRisk > 0.08 ? "#f97316" : d.avgRisk > 0.04 ? "#eab308" : "#16a34a"} />
@@ -342,7 +342,7 @@ export default function SEDAnalyticsView({ schools }: { schools: School[] }) {
                     <Pie data={tierDist} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value">
                       {tierDist.map((e, i) => <Cell key={i} fill={e.color} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => fmtInt(v)} />
+                    <Tooltip formatter={(v) => fmtInt(Number(v ?? 0))} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
