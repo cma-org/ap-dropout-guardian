@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useLang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import type { School, Metrics } from "@/lib/types";
@@ -24,9 +24,9 @@ const UPLOAD_SLOTS = [
 type UploadState = "uploading" | "done" | "error";
 type FileEntry = { name: string; size: number; state: UploadState };
 
-type Props = { school: School | null; metrics: Metrics };
+type Props = { schools: School[]; metrics: Metrics };
 
-export default function TeacherDataView({ school, metrics }: Props) {
+export default function TeacherDataView({ schools, metrics }: Props) {
   const { lang } = useLang();
   const { user } = useAuth();
   const teacherGrade = user?.role === "teacher" ? user.grade : null;
@@ -34,8 +34,10 @@ export default function TeacherDataView({ school, metrics }: Props) {
   const [dragging, setDragging] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const totalStudents = school?.n_students ?? 0;
-  const totalFlagged = school?.n_flagged ?? 0;
+  const stats = useMemo(() => {
+    const mySchool = schools[0];
+    return { students: mySchool?.n_students ?? 0, flagged: mySchool?.n_flagged ?? 0 };
+  }, [schools]);
 
   function handleFile(slotId: string, file: File) {
     setUploads((u) => ({ ...u, [slotId]: { name: file.name, size: file.size, state: "uploading" } }));
@@ -57,8 +59,8 @@ export default function TeacherDataView({ school, metrics }: Props) {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {[
-          { icon: <Users className="h-4 w-4" />, label: lang === "en" ? "Your Students" : "మీ విద్యార్థులు", value: fmtInt(totalStudents) },
-          { icon: <AlertCircle className="h-4 w-4 text-orange-500" />, label: lang === "en" ? "Flagged At-Risk" : "ప్రమాదంలో ఉన్నవారు", value: fmtInt(totalFlagged) },
+          { icon: <Users className="h-4 w-4" />, label: lang === "en" ? "Your Students" : "మీ విద్యార్థులు", value: fmtInt(stats.students) },
+          { icon: <AlertCircle className="h-4 w-4 text-orange-500" />, label: lang === "en" ? "Flagged At-Risk" : "ప్రమాదంలో ఉన్నవారు", value: fmtInt(stats.flagged) },
           { icon: <Database className="h-4 w-4 text-violet-600" />, label: lang === "en" ? "Files Uploaded" : "అప్‌లోడ్ ఫైళ్లు", value: Object.values(uploads).filter((u) => u.state === "done").length.toString() },
         ].map((c) => (
           <div key={c.label} className="rounded-xl border bg-white px-5 py-4">

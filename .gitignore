@@ -8,8 +8,8 @@ wheels/
 .venv/
 
 # Large data & model artifacts (kept local only)
-data/
-artifacts/
+/data/
+/artifacts/
 models/*.pkl
 models/*.joblib
 models/*.json
@@ -20,12 +20,6 @@ cache/
 web/.next/
 web/node_modules/
 web/public/data/
-
-# Allow Next.js app route folders named "data" (source code, not data files)
-!web/src/
-!web/src/app/
-!web/src/app/**/
-!web/src/**/data/
 
 # Misc
 .DS_Store
