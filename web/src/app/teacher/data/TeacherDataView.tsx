@@ -239,15 +239,19 @@ export default function TeacherDataView({ schools, metrics }: Props) {
       </div>
 
       {/* Recent uploads */}
-      {recentUploads.length > 0 && (
-        <div className="rounded-xl border bg-white overflow-hidden">
-          <div className="px-6 py-4 border-b bg-zinc-50 flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
-            <h2 className="font-semibold text-zinc-900 text-sm">{lang === "en" ? "Recent Uploads" : "ఇటీవల అప్‌లోడ్‌లు"}</h2>
-            <span className="ml-auto text-[10px] text-zinc-400">{lang === "en" ? "Last 20 uploads" : "చివరి 20 అప్‌లోడ్‌లు"}</span>
-          </div>
-          <div className="divide-y max-h-64 overflow-y-auto">
-            {recentUploads.map((upload) => (
+      <div className="rounded-xl border bg-white overflow-hidden">
+        <div className="px-6 py-4 border-b bg-zinc-50 flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <h2 className="font-semibold text-zinc-900 text-sm">{lang === "en" ? "Recent Uploads" : "ఇటీవల అప్‌లోడ్‌లు"}</h2>
+          <span className="ml-auto text-[10px] text-zinc-400">{lang === "en" ? "Last 20 uploads" : "చివరి 20 అప్‌లోడ్‌లు"}</span>
+        </div>
+        <div className="divide-y max-h-64 overflow-y-auto">
+          {recentUploads.length === 0 ? (
+            <div className="px-6 py-8 text-center text-zinc-500 text-sm">
+              {lang === "en" ? "No recent uploads." : "ఇటీవల అప్‌లోడ్‌లు లేవు."}
+            </div>
+          ) : (
+            recentUploads.map((upload) => (
               <div key={upload.id} className="px-6 py-3 flex items-center gap-4">
                 <div className="mt-0.5">
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -259,15 +263,23 @@ export default function TeacherDataView({ schools, metrics }: Props) {
                     {upload.recordCount > 0 && ` · ${upload.recordCount} records`}
                   </p>
                 </div>
+                <div className="w-32 sm:w-48 shrink-0 flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-zinc-100 flex items-center justify-center border border-zinc-200 hidden sm:flex">
+                    <Users className="h-3 w-3 text-zinc-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-zinc-400 leading-none mb-0.5">{lang === "en" ? "Uploaded by" : "అప్‌లోడ్ చేసినవారు"}</p>
+                    <p className="text-xs text-zinc-700 truncate font-medium">{upload.user?.name || (lang === "en" ? "Unknown" : "తెలియదు")}</p>
+                  </div>
+                </div>
                 <div className="text-right shrink-0">
                   <p className="text-[10px] text-zinc-400">{formatDate(upload.createdAt, lang)}</p>
-                  {upload.user && <p className="text-[10px] text-zinc-400">{upload.user.name}</p>}
                 </div>
               </div>
-            ))}
-          </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
 
       {/* Data sources */}
       <div className="rounded-xl border bg-white overflow-hidden">

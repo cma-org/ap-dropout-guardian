@@ -72,7 +72,7 @@ export default function HMDataView({ school, metrics }: Props) {
         if (school?.school_id) params.set("schoolId", String(school.school_id));
         params.set("limit", "20");
 
-        const res = await fetch(`/api/upload?${params}`);
+        const res = await fetch(`/api/upload/recent?${params}`);
         if (res.ok) {
           const data = await res.json();
           setRecentUploads(data.uploads || []);
@@ -133,7 +133,7 @@ export default function HMDataView({ school, metrics }: Props) {
         const params = new URLSearchParams();
         if (school?.school_id) params.set("schoolId", String(school.school_id));
         params.set("limit", "20");
-        const recentRes = await fetch(`/api/upload?${params}`);
+        const recentRes = await fetch(`/api/upload/recent?${params}`);
         if (recentRes.ok) {
           const data = await recentRes.json();
           setRecentUploads(data.uploads || []);
