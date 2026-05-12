@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useLang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import type { School, Metrics } from "@/lib/types";
@@ -24,6 +24,8 @@ const UPLOAD_SLOTS = [
 type UploadState = "uploading" | "done" | "error";
 type FileEntry = { name: string; size: number; state: UploadState };
 
+type RecentUpload = { id: number; slotId: string; fileName: string; recordCount: number; createdAt: string; user?: { name: string } };
+
 type Props = { schools: School[]; metrics: Metrics };
 
 function parseCsv(text: string) {
@@ -41,11 +43,20 @@ function parseCsv(text: string) {
   return records;
 }
 
+function formatDate(dateStr: string, lang: string) {
+  const date = new Date(dateStr);
+  if (lang === "te") {
+    return date.toLocaleDateString("te-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 export default function TeacherDataView({ schools, metrics }: Props) {
   const { lang } = useLang();
   const { user } = useAuth();
   const teacherGrade = user?.role === "teacher" ? user.grade : null;
   const [uploads, setUploads] = useState<Record<string, FileEntry>>({});
+  const [recentUploads, setRecentUploads] = useState<RecentUpload[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -53,6 +64,53 @@ export default function TeacherDataView({ schools, metrics }: Props) {
     const mySchool = schools[0];
     return { students: mySchool?.n_students ?? 0, flagged: mySchool?.n_flagged ?? 0 };
   }, [schools]);
+
+  // Fetch recent uploads on mount
+  useEffect(() => {
+    async function fetchRecentUploads() {
+      try {
+        const params = new URLSearchParams();
+        if (user?.schoolId) params.set("schoolId", String(user.schoolId));
+        params.set("limit", "20");
+
+        const res = await fetch(`/api/upload?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRecentUploads(data.uploads || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch recent uploads:", err);
+      }
+    }
+    fetchRecentUploads();
+  }, [user?.schoolId]);
+
+  // Sync recent uploads with local upload state
+  useEffect(() => {
+    const completedSlots = Object.entries(uploads)
+      .filter(([, entry]) => entry.state === "done")
+      .map(([slotId, entry]) => {
+        const recentMatch = recentUploads.find(u => u.slotId === slotId);
+        return {
+          id: recentMatch?.id ?? Date.now(),
+          slotId,
+          fileName: entry.name,
+          recordCount: 0,
+          createdAt: recentMatch?.createdAt ?? new Date().toISOString(),
+          user: user ? { name: user.name } : undefined,
+        };
+      });
+
+    if (completedSlots.length > 0) {
+      setRecentUploads(prev => {
+        const existingIds = new Set(completedSlots.map(s => s.id));
+        const filteredPrev = prev.filter(u => !existingIds.has(u.id));
+        return [...completedSlots, ...filteredPrev].slice(0, 20);
+      });
+    }
+  }, [uploads, user]);
+
+  const totalFilesUploaded = recentUploads.length;
 
   async function handleFile(slotId: string, file: File) {
     setUploads((u) => ({ ...u, [slotId]: { name: file.name, size: file.size, state: "uploading" } }));
@@ -62,10 +120,25 @@ export default function TeacherDataView({ schools, metrics }: Props) {
       const res = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slotId, records })
+        body: JSON.stringify({
+          slotId,
+          records,
+          fileName: file.name,
+          userId: user?.id,
+          schoolId: user?.schoolId,
+        })
       });
       if (res.ok) {
         setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "done" } }));
+        // Refresh recent uploads
+        const params = new URLSearchParams();
+        if (user?.schoolId) params.set("schoolId", String(user.schoolId));
+        params.set("limit", "20");
+        const recentRes = await fetch(`/api/upload?${params}`);
+        if (recentRes.ok) {
+          const data = await recentRes.json();
+          setRecentUploads(data.uploads || []);
+        }
       } else {
         setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "error" } }));
       }
@@ -92,7 +165,7 @@ export default function TeacherDataView({ schools, metrics }: Props) {
         {[
           { icon: <Users className="h-4 w-4" />, label: lang === "en" ? "Your Students" : "మీ విద్యార్థులు", value: fmtInt(stats.students) },
           { icon: <AlertCircle className="h-4 w-4 text-orange-500" />, label: lang === "en" ? "Flagged At-Risk" : "ప్రమాదంలో ఉన్నవారు", value: fmtInt(stats.flagged) },
-          { icon: <Database className="h-4 w-4 text-violet-600" />, label: lang === "en" ? "Files Uploaded" : "అప్‌లోడ్ ఫైళ్లు", value: Object.values(uploads).filter((u) => u.state === "done").length.toString() },
+          { icon: <Database className="h-4 w-4 text-violet-600" />, label: lang === "en" ? "Files Uploaded" : "అప్‌లోడ్ ఫైళ్లు", value: totalFilesUploaded.toString() },
         ].map((c) => (
           <div key={c.label} className="rounded-xl border bg-white px-5 py-4">
             <div className="flex items-center gap-2 text-zinc-400 mb-2">{c.icon}<span className="text-xs font-medium">{c.label}</span></div>
@@ -164,6 +237,37 @@ export default function TeacherDataView({ schools, metrics }: Props) {
           })}
         </div>
       </div>
+
+      {/* Recent uploads */}
+      {recentUploads.length > 0 && (
+        <div className="rounded-xl border bg-white overflow-hidden">
+          <div className="px-6 py-4 border-b bg-zinc-50 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <h2 className="font-semibold text-zinc-900 text-sm">{lang === "en" ? "Recent Uploads" : "ఇటీవల అప్‌లోడ్‌లు"}</h2>
+            <span className="ml-auto text-[10px] text-zinc-400">{lang === "en" ? "Last 20 uploads" : "చివరి 20 అప్‌లోడ్‌లు"}</span>
+          </div>
+          <div className="divide-y max-h-64 overflow-y-auto">
+            {recentUploads.map((upload) => (
+              <div key={upload.id} className="px-6 py-3 flex items-center gap-4">
+                <div className="mt-0.5">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-zinc-800 truncate">{upload.fileName}</p>
+                  <p className="text-[10px] text-zinc-500">
+                    {UPLOAD_SLOTS.find(s => s.id === upload.slotId)?.labelTE ?? upload.slotId}
+                    {upload.recordCount > 0 && ` · ${upload.recordCount} records`}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-zinc-400">{formatDate(upload.createdAt, lang)}</p>
+                  {upload.user && <p className="text-[10px] text-zinc-400">{upload.user.name}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Data sources */}
       <div className="rounded-xl border bg-white overflow-hidden">

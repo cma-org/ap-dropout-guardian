@@ -8,31 +8,17 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum RiskTier {
-  Critical
-  High
-  Medium
-  Low
-}
-
-enum Role {
-  teacher
-  hm
-  district
-  sed
-}
-
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  password   String
-  name       String
-  role       Role
-  schoolId   BigInt?
-  schoolName String?
-  district   String?
-  createdAt  DateTime @default(now())
-
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String
+  role          Role
+  schoolId      BigInt?
+  schoolName    String?
+  district      String?
+  createdAt     DateTime       @default(now())
+  dataUploads   DataUpload[]
   interventions Intervention[]
 }
 
@@ -42,17 +28,16 @@ model District {
 }
 
 model School {
-  schoolId     BigInt  @id
-  schoolName   String?
-  districtName String?
-  mandalName   String?
-  latitude     Float?
-  longitude    Float?
-  nStudents    Int
-  nFlagged     Int
-  avgRisk      Float
-  pctCritical  Float
-
+  schoolId       BigInt          @id
+  schoolName     String?
+  districtName   String?
+  mandalName     String?
+  latitude       Float?
+  longitude      Float?
+  nStudents      Int
+  nFlagged       Int
+  avgRisk        Float
+  pctCritical    Float
   rosterStudents RosterStudent[]
   students       StudentDetail[]
 }
@@ -71,7 +56,7 @@ model Mandal {
 }
 
 model StudentDetail {
-  childSno            Int      @id
+  childSno            Int            @id
   schoolId            BigInt
   schoolName          String?
   districtName        String?
@@ -90,24 +75,22 @@ model StudentDetail {
   transportAllowance  Int
   riskScore           Float
   tier                RiskTier
-
-  school        School         @relation(fields: [schoolId], references: [schoolId])
-  drivers       Driver[]
-  interventions Intervention[]
+  drivers             Driver[]
+  interventions       Intervention[]
+  school              School         @relation(fields: [schoolId], references: [schoolId])
 }
 
 model Driver {
-  id         Int    @id @default(autoincrement())
+  id         Int           @id @default(autoincrement())
   childSno   Int
   feature    String
   labelEn    String
   labelTe    String
   contrib    Float
   value      Float?
-  sentenceEn String @db.Text
-  sentenceTe String @db.Text
-
-  student StudentDetail @relation(fields: [childSno], references: [childSno])
+  sentenceEn String
+  sentenceTe String
+  student    StudentDetail @relation(fields: [childSno], references: [childSno])
 }
 
 model RosterStudent {
@@ -123,8 +106,7 @@ model RosterStudent {
   migrationFlag       Int?
   casteClean          Int?
   familyIncomeBracket Int?
-
-  school School @relation(fields: [schoolId], references: [schoolId])
+  school              School   @relation(fields: [schoolId], references: [schoolId])
 
   @@unique([childSno, schoolId])
 }
@@ -145,24 +127,48 @@ model Metrics {
 model CounsellorTemplate {
   id              Int    @id @default(autoincrement())
   key             String @unique
-  parentSmsEn     String @db.Text
-  parentSmsTe     String @db.Text
-  teacherScriptEn String @db.Text
-  teacherScriptTe String @db.Text
+  parentSmsEn     String
+  parentSmsTe     String
+  teacherScriptEn String
+  teacherScriptTe String
   schemes         Json
 }
 
 model Intervention {
-  id          Int       @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   childSno    Int
   actionType  String
-  status      String    @default("pending")
+  status      String        @default("pending")
   assignedTo  String
-  notes       String?   @db.Text
-  createdAt   DateTime  @default(now())
+  notes       String?
+  createdAt   DateTime      @default(now())
   completedAt DateTime?
   createdBy   Int?
+  student     StudentDetail @relation(fields: [childSno], references: [childSno])
+  user        User?         @relation(fields: [createdBy], references: [id])
+}
 
-  student StudentDetail @relation(fields: [childSno], references: [childSno])
-  user    User?         @relation(fields: [createdBy], references: [id])
+model DataUpload {
+  id          Int      @id @default(autoincrement())
+  slotId      String
+  fileName    String
+  recordCount Int
+  schoolId    BigInt?
+  uploadedBy  Int?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [uploadedBy], references: [id])
+}
+
+enum RiskTier {
+  Critical
+  High
+  Medium
+  Low
+}
+
+enum Role {
+  teacher
+  hm
+  district
+  sed
 }

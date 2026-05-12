@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 export type Role = "teacher" | "hm" | "district" | "sed";
 
 export interface UserSession {
+  id: number;
   email: string;
   name: string;
   role: Role;
@@ -19,6 +20,7 @@ const DEMO_DISTRICT = "NTR";
 
 export const DUMMY_USERS: Record<string, UserSession & { password: string }> = {
   "teacher@zphs.ap.gov.in": {
+    id: 1,
     email: "teacher@zphs.ap.gov.in",
     password: "teacher123",
     role: "teacher",
@@ -29,6 +31,7 @@ export const DUMMY_USERS: Record<string, UserSession & { password: string }> = {
     grade: 8,
   },
   "principal@zphs.ap.gov.in": {
+    id: 2,
     email: "principal@zphs.ap.gov.in",
     password: "hm123",
     role: "hm",
@@ -38,6 +41,7 @@ export const DUMMY_USERS: Record<string, UserSession & { password: string }> = {
     district: DEMO_DISTRICT,
   },
   "deo@ntr.ap.gov.in": {
+    id: 3,
     email: "deo@ntr.ap.gov.in",
     password: "district123",
     role: "district",
@@ -45,6 +49,7 @@ export const DUMMY_USERS: Record<string, UserSession & { password: string }> = {
     district: DEMO_DISTRICT,
   },
   "director@apsed.ap.gov.in": {
+    id: 4,
     email: "director@apsed.ap.gov.in",
     password: "sed123",
     role: "sed",
