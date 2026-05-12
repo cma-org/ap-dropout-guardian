@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useLang, T } from "@/lib/i18n";
 import type { School, Mandal, Metrics, RiskTier } from "@/lib/types";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
 import {
@@ -76,6 +77,7 @@ export default function RTGSDashboard({
   mandals: Mandal[];
   metrics: Metrics;
 }) {
+  const { lang } = useLang();
   const { user } = useAuth();
   const router = useRouter();
   const [alertsVisible, setAlertsVisible] = useState(DEMO_ALERTS.length);
@@ -113,28 +115,28 @@ export default function RTGSDashboard({
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900 flex items-center gap-2">
             <Globe className="h-6 w-6 text-[color:var(--ap-navy)]" />
-            School Education Department — State-wide Control Centre
+            {T.rtgs.title[lang]}
           </h1>
           <p className="text-sm text-zinc-500 mt-0.5">
-            Andhra Pradesh · 26 districts · {fmtInt(schools.length)} schools · AY 2024-25
+            {T.rtgs.subtitle[lang].replace("{count}", fmtInt(schools.length))}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-zinc-500 bg-zinc-100 rounded-lg px-3 py-2">
-            <span className="font-semibold text-zinc-700">{user?.name}</span> · School Education Dept.
+            <span className="font-semibold text-zinc-700">{user?.name}</span> · {T.rtgs.sedDept[lang]}
           </div>
           <button
             onClick={() => exportStateCSV(schools)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-300 text-xs text-zinc-600 hover:bg-zinc-50"
           >
-            <Download className="h-3.5 w-3.5" /> Export CSV
+            <Download className="h-3.5 w-3.5" /> {T.rtgs.export[lang]}
           </button>
           <button
             onClick={handleRefresh}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-300 text-xs text-zinc-600 hover:bg-zinc-50"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
+            {T.rtgs.refresh[lang]}
           </button>
         </div>
       </div>
@@ -143,32 +145,32 @@ export default function RTGSDashboard({
       <div className="rounded-xl border bg-white px-5 py-3 flex flex-wrap items-center gap-6 text-xs">
         <div className="flex items-center gap-1.5 text-emerald-700">
           <Wifi className="h-3.5 w-3.5" />
-          <span className="font-medium">System online</span>
+          <span className="font-medium">{T.rtgs.sysOnline[lang]}</span>
         </div>
         <div className="flex items-center gap-1.5 text-zinc-600">
           <Database className="h-3.5 w-3.5" />
-          Last model run: <span className="font-medium text-zinc-800">2025-03-31</span>
+          {T.rtgs.lastModel[lang]} <span className="font-medium text-zinc-800">2025-03-31</span>
         </div>
         <div className="flex items-center gap-1.5 text-zinc-600">
           <Zap className="h-3.5 w-3.5" />
-          LEAP API: <span className="font-medium text-amber-700">Mock (demo mode)</span>
+          {T.rtgs.leapApi[lang]} <span className="font-medium text-amber-700">{T.rtgs.mock[lang]}</span>
         </div>
         <div className="flex items-center gap-1.5 text-zinc-600">
           <Activity className="h-3.5 w-3.5" />
-          Last refresh: <span className="font-medium text-zinc-800">{lastRefresh ? lastRefresh.toLocaleTimeString() : "—"}</span>
+          {T.rtgs.lastRefresh[lang]} <span className="font-medium text-zinc-800">{lastRefresh ? lastRefresh.toLocaleTimeString() : "—"}</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5 text-zinc-500">
-          Model: XGBoost v1 · Recall {pctFormat(metrics.test_oot.recall, 1)} · ROC-AUC {metrics.test_oot.roc_auc.toFixed(3)}
+          {T.rtgs.modelDetails[lang]} {pctFormat(metrics.test_oot.recall, 1)} · ROC-AUC {metrics.test_oot.roc_auc.toFixed(3)}
         </div>
       </div>
 
       {/* State-wide stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Students monitored", value: fmtInt(totalStudents), sub: "All AP schools", icon: <Globe className="h-5 w-5 text-zinc-400" /> },
-          { label: "Flagged at-risk", value: fmtInt(totalFlagged), sub: pctFormat(totalFlagged / totalStudents, 1) + " flag rate", icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, tone: "warn" },
-          { label: "Critical-risk schools", value: fmtInt(criticalSchools), sub: "pct_critical > 5%", icon: <Shield className="h-5 w-5 text-red-500" />, tone: "bad" },
-          { label: "Model recall", value: pctFormat(metrics.test_oot.recall, 1), sub: "OOT 2024-25", icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />, tone: "good" },
+          { label: T.rtgs.studentsMonitored[lang], value: fmtInt(totalStudents), sub: T.rtgs.allApSchools[lang], icon: <Globe className="h-5 w-5 text-zinc-400" /> },
+          { label: T.rtgs.flaggedRisk[lang], value: fmtInt(totalFlagged), sub: pctFormat(totalFlagged / totalStudents, 1) + " " + T.rtgs.flagRate[lang], icon: <AlertTriangle className="h-5 w-5 text-amber-500" />, tone: "warn" },
+          { label: T.rtgs.criticalSchools[lang], value: fmtInt(criticalSchools), sub: T.rtgs.pctCritical[lang], icon: <Shield className="h-5 w-5 text-red-500" />, tone: "bad" },
+          { label: T.rtgs.modelRecall[lang], value: pctFormat(metrics.test_oot.recall, 1), sub: T.rtgs.oot[lang], icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />, tone: "good" },
         ].map((s) => (
           <div key={s.label} className={cn("rounded-xl border bg-white px-4 py-3", s.tone === "bad" ? "border-red-200 bg-red-50/30" : s.tone === "warn" ? "border-amber-200 bg-amber-50/30" : "")}>
             <div className="flex items-center justify-between mb-2">
@@ -187,10 +189,10 @@ export default function RTGSDashboard({
           <div className="px-5 py-4 border-b border-zinc-200 flex items-center justify-between">
             <h2 className="font-semibold text-zinc-800 flex items-center gap-2">
               <Bell className="h-4 w-4 text-red-500 animate-pulse" />
-              Live alert feed
+              {T.rtgs.liveFeed[lang]}
             </h2>
             <span className="text-[10px] bg-red-100 text-red-700 rounded-full px-2 py-0.5 font-medium">
-              {alertsVisible} new today
+              {alertsVisible} {T.rtgs.newToday[lang]}
             </span>
           </div>
           <div className="divide-y divide-zinc-100 max-h-[480px] overflow-y-auto">
@@ -209,7 +211,7 @@ export default function RTGSDashboard({
             ))}
           </div>
           <div className="px-5 py-3 border-t border-zinc-200 text-xs text-zinc-500 text-center">
-            Simulated feed · In production: LEAP API webhook push
+            {T.rtgs.feedNote[lang]}
           </div>
         </div>
 
@@ -217,8 +219,8 @@ export default function RTGSDashboard({
         <div className="lg:col-span-2 space-y-5">
           <div className="rounded-xl border bg-white p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-zinc-800">State-wide trend — flagged vs interventions</h2>
-              <span className="text-xs text-zinc-400 italic">Simulated</span>
+              <h2 className="font-semibold text-zinc-800">{T.rtgs.trendTitle[lang]}</h2>
+              <span className="text-xs text-zinc-400 italic">{T.dashboard.simulated[lang]}</span>
             </div>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={trend} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -233,18 +235,18 @@ export default function RTGSDashboard({
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="flagged" stroke="#dc2626" fill="url(#flagGrad)" strokeWidth={2} name="Flagged" />
-                <Line type="monotone" dataKey="interventions" stroke="#16a34a" strokeWidth={2} dot={false} name="Interventions" />
+                <Area type="monotone" dataKey="flagged" stroke="#dc2626" fill="url(#flagGrad)" strokeWidth={2} name={T.common.flagged[lang]} />
+                <Line type="monotone" dataKey="interventions" stroke="#16a34a" strokeWidth={2} dot={false} name={T.rtgs.trendInterventions[lang]} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
           <div className="rounded-xl border bg-white p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-zinc-800">District comparison — flagged students</h2>
+              <h2 className="font-semibold text-zinc-800">{T.rtgs.distComparison[lang]}</h2>
               {drillDistrict && (
                 <button onClick={() => setDrillDistrict(null)} className="text-xs text-[color:var(--ap-navy)] hover:underline">
-                  ← All districts
+                  ← {T.rtgs.allDistricts[lang]}
                 </button>
               )}
             </div>
@@ -255,14 +257,14 @@ export default function RTGSDashboard({
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <Bar dataKey="flagged" name="Flagged" radius={[4, 4, 0, 0]} cursor="pointer" onClick={(d: any) => d?.district && setDrillDistrict((d.district as string).replace("…", ""))}>
+                <Bar dataKey="flagged" name={T.common.flagged[lang]} radius={[4, 4, 0, 0]} cursor="pointer" onClick={(d: any) => d?.district && setDrillDistrict((d.district as string).replace("…", ""))}>
                   {distData.map((d, i) => (
                     <Cell key={i} fill={drillDistrict === d.district ? "#0b3b6f" : i < 4 ? "#dc2626" : i < 8 ? "#f97316" : "#eab308"} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <p className="text-xs text-zinc-400 mt-1">Click a bar to drill into that district&apos;s schools.</p>
+            <p className="text-xs text-zinc-400 mt-1">{T.rtgs.clickBar[lang]}</p>
           </div>
         </div>
       </div>
@@ -273,19 +275,19 @@ export default function RTGSDashboard({
           <div className="px-5 py-4 border-b border-zinc-200 flex items-center justify-between">
             <h2 className="font-semibold text-zinc-800 flex items-center gap-2">
               <ChevronRight className="h-4 w-4" />
-              Drill-down: {drillDistrict} district schools
+              {T.rtgs.drillDown[lang].replace("{district}", drillDistrict)}
             </h2>
-            <span className="text-xs text-zinc-500">{drillSchools.length} schools</span>
+            <span className="text-xs text-zinc-500">{drillSchools.length} {T.nav.schools[lang].toLowerCase()}</span>
           </div>
           <div className="overflow-auto max-h-64">
             <table className="min-w-full text-sm">
               <thead className="sticky top-0 bg-zinc-50">
                 <tr className="text-left text-xs text-zinc-500 border-b border-zinc-200">
-                  <th className="px-5 py-2 font-medium">School</th>
-                  <th className="px-4 py-2 font-medium">Mandal</th>
-                  <th className="px-4 py-2 font-medium text-right">Students</th>
-                  <th className="px-4 py-2 font-medium text-right">Flagged</th>
-                  <th className="px-4 py-2 font-medium text-right">Avg risk</th>
+                  <th className="px-5 py-2 font-medium">{T.rtgs.tblSchool[lang]}</th>
+                  <th className="px-4 py-2 font-medium">{T.rtgs.tblMandal[lang]}</th>
+                  <th className="px-4 py-2 font-medium text-right">{T.rtgs.tblStudents[lang]}</th>
+                  <th className="px-4 py-2 font-medium text-right">{T.rtgs.tblFlagged[lang]}</th>
+                  <th className="px-4 py-2 font-medium text-right">{T.rtgs.tblAvgRisk[lang]}</th>
                   <th className="px-4 py-2 font-medium"></th>
                 </tr>
               </thead>
@@ -299,7 +301,7 @@ export default function RTGSDashboard({
                     <td className="px-4 py-2 text-right tabular-nums text-zinc-600">{pctFormat(s.avg_risk, 1)}</td>
                     <td className="px-4 py-2">
                       <Link href="/teacher" className="text-[color:var(--ap-navy)] hover:underline text-xs flex items-center gap-1">
-                        View <ArrowUpRight className="h-3 w-3" />
+                        {T.rtgs.view[lang]} <ArrowUpRight className="h-3 w-3" />
                       </Link>
                     </td>
                   </tr>
@@ -312,7 +314,7 @@ export default function RTGSDashboard({
 
       {/* Top mandals */}
       <div className="rounded-xl border bg-white p-5">
-        <h2 className="font-semibold text-zinc-800 mb-4">Top mandals by flagged students (state-wide)</h2>
+        <h2 className="font-semibold text-zinc-800 mb-4">{T.rtgs.topMandals[lang]}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {topMandals.map((m, i) => (
             <div key={m.mandal_name} className={cn("rounded-lg border p-3", i < 2 ? "border-red-200 bg-red-50/30" : i < 4 ? "border-orange-200 bg-orange-50/20" : "border-zinc-200")}>
@@ -321,7 +323,7 @@ export default function RTGSDashboard({
               <div className={cn("text-xl font-bold mt-1", i < 2 ? "text-red-700" : i < 4 ? "text-orange-700" : "text-zinc-800")}>
                 {fmtInt(m.n_flagged)}
               </div>
-              <div className="text-xs text-zinc-500">flagged of {fmtInt(m.n_students)}</div>
+              <div className="text-xs text-zinc-500">{T.rtgs.flaggedOf[lang]} {fmtInt(m.n_students)}</div>
             </div>
           ))}
         </div>
@@ -332,14 +334,14 @@ export default function RTGSDashboard({
         <div className="rounded-xl border bg-white p-5">
           <h2 className="font-semibold text-zinc-800 mb-3 flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
-            LEAP API integration status
+            {T.rtgs.leapStatusTitle[lang]}
           </h2>
           <div className="space-y-2 text-sm">
             {[
-              { label: "Push student flags", status: "Mock (demo)", ok: false },
-              { label: "Pull intervention outcomes", status: "Mock (demo)", ok: false },
-              { label: "Authentication token", status: "Not configured", ok: false },
-              { label: "Webhook endpoint", status: "Ready to configure", ok: false },
+              { label: T.rtgs.pushFlags[lang], status: T.rtgs.mock[lang], ok: false },
+              { label: T.rtgs.pullOutcomes[lang], status: T.rtgs.mock[lang], ok: false },
+              { label: T.rtgs.authToken[lang], status: T.rtgs.notConfig[lang], ok: false },
+              { label: T.rtgs.webhook[lang], status: T.rtgs.readyConfig[lang], ok: false },
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between rounded-lg bg-zinc-50 border px-3 py-2">
                 <span className="text-zinc-700">{item.label}</span>
@@ -350,21 +352,21 @@ export default function RTGSDashboard({
             ))}
           </div>
           <p className="text-xs text-zinc-500 mt-3 italic">
-            Production: LEAP API credentials + gov-cloud endpoint required. Architecture slide in pitch deck.
+            {T.rtgs.leapNote[lang]}
           </p>
         </div>
 
         <div className="rounded-xl border bg-white p-5">
           <h2 className="font-semibold text-zinc-800 mb-3 flex items-center gap-2">
             <RefreshCw className="h-4 w-4 text-emerald-600" />
-            Closed-loop retraining pipeline
+            {T.rtgs.closedLoop[lang]}
           </h2>
           <div className="space-y-2 text-sm">
             {[
-              { step: "1", label: "Intervention logged by teacher", status: "Active (localStorage demo)" },
-              { step: "2", label: "Outcome tracked (dropout / retained)", status: "Pending LEAP integration" },
-              { step: "3", label: "Monthly data lake refresh", status: "Scheduled (1st of month)" },
-              { step: "4", label: "XGBoost retrain + SHAP refresh", status: "Automated via pipeline" },
+              { step: "1", label: T.rtgs.step1[lang], status: T.rtgs.step1stat[lang] },
+              { step: "2", label: T.rtgs.step2[lang], status: T.rtgs.step2stat[lang] },
+              { step: "3", label: T.rtgs.step3[lang], status: T.rtgs.step3stat[lang] },
+              { step: "4", label: T.rtgs.step4[lang], status: T.rtgs.step4stat[lang] },
             ].map((s) => (
               <div key={s.step} className="flex gap-3 items-start rounded-lg bg-zinc-50 border px-3 py-2">
                 <div className="h-5 w-5 rounded-full bg-[color:var(--ap-navy)] text-white text-xs flex items-center justify-center shrink-0 font-bold">{s.step}</div>
