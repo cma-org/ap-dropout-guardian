@@ -14,6 +14,7 @@ import webhooksRouter from "./routes/webhooks";
 import modelRouter from "./routes/model";
 import chatRouter from "./routes/chat";
 import usersRouter from "./routes/users";
+import { uploadRouter } from "./routes/upload";
 import { auditLog } from "./middleware/auditLog";
 import { dataRetentionPolicy } from "./middleware/dataRetention";
 
@@ -31,7 +32,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 app.use(auditLog);
 app.use(dataRetentionPolicy);
 
@@ -47,6 +48,7 @@ app.use("/api/webhooks", webhooksRouter);
 app.use("/api/model", modelRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/upload", uploadRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

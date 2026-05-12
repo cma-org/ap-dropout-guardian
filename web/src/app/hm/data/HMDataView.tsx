@@ -5,7 +5,7 @@ import type { School, Metrics } from "@/lib/types";
 import { fmtInt, pctFormat } from "@/lib/utils";
 import {
   Database, Users, BarChart2, CheckCircle, AlertCircle,
-  Upload, X, Loader2, CloudUpload,
+  Upload, X, Loader2, CloudUpload, Download
 } from "lucide-react";
 
 const DATA_SOURCES = [
@@ -17,15 +17,30 @@ const DATA_SOURCES = [
 ];
 
 const UPLOAD_SLOTS = [
-  { id: "attendance", label: "Attendance Register (CSV)", labelTE: "హాజరు రిజిస్టర్ (CSV)", accept: ".csv,.xlsx", hint: "Monthly attendance — CHILDSNO, month columns" },
-  { id: "marks", label: "FA/SA Marks (CSV / Excel)", labelTE: "FA/SA మార్కులు (CSV/Excel)", accept: ".csv,.xlsx", hint: "Subject-wise marks per student" },
-  { id: "dropout", label: "Dropout Register (CSV)", labelTE: "డ్రాపౌట్ రిజిస్టర్ (CSV)", accept: ".csv", hint: "CHILDSNO of students who dropped out" },
+  { id: "attendance", label: "Attendance Register (CSV)", labelTE: "హాజరు రిజిస్టర్ (CSV)", accept: ".csv", hint: "Monthly attendance — CHILDSNO, attendanceRate", template: "/templates/attendance.csv?v=2" },
+  { id: "marks", label: "FA/SA Marks (CSV)", labelTE: "FA/SA మార్కులు (CSV)", accept: ".csv", hint: "Subject-wise marks per student", template: "/templates/marks.csv?v=2" },
+  { id: "dropout", label: "Dropout Register (CSV)", labelTE: "డ్రాపౌట్ రిజిస్టర్ (CSV)", accept: ".csv", hint: "CHILDSNO of students who dropped out", template: "/templates/dropout.csv?v=2" },
 ];
 
 type UploadState = "idle" | "uploading" | "done" | "error";
 type FileEntry = { name: string; size: number; state: UploadState };
 
 type Props = { school: School | null; metrics: Metrics };
+
+function parseCsv(text: string) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim());
+  const records = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const values = lines[i].split(',').map(v => v.trim());
+    const record: any = {};
+    headers.forEach((h, idx) => { record[h] = values[idx]; });
+    records.push(record);
+  }
+  return records;
+}
 
 export default function HMDataView({ school, metrics }: Props) {
   const { lang } = useLang();
@@ -36,9 +51,25 @@ export default function HMDataView({ school, metrics }: Props) {
   const totalStudents = school?.n_students ?? 0;
   const totalFlagged = school?.n_flagged ?? 0;
 
-  function handleFile(slotId: string, file: File) {
+  async function handleFile(slotId: string, file: File) {
     setUploads((u) => ({ ...u, [slotId]: { name: file.name, size: file.size, state: "uploading" } }));
-    setTimeout(() => setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "done" } })), 1800);
+    try {
+      const text = await file.text();
+      const records = parseCsv(text);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotId, records })
+      });
+      if (res.ok) {
+        setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "done" } }));
+      } else {
+        setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "error" } }));
+      }
+    } catch (err) {
+      console.error(err);
+      setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "error" } }));
+    }
   }
 
   function removeUpload(slotId: string) {
@@ -72,7 +103,7 @@ export default function HMDataView({ school, metrics }: Props) {
         <div className="px-6 py-4 border-b bg-zinc-50 flex items-center gap-2">
           <CloudUpload className="h-4 w-4 text-[color:var(--ap-navy)]" />
           <h2 className="font-semibold text-zinc-900 text-sm">{lang === "en" ? "Upload Data Files" : "డేటా ఫైళ్లు అప్‌లోడ్ చేయండి"}</h2>
-          <span className="ml-auto text-[10px] text-zinc-400">{lang === "en" ? "CSV or Excel · Max 50 MB" : "CSV లేదా Excel · గరిష్టం 50 MB"}</span>
+          <span className="ml-auto text-[10px] text-zinc-400">{lang === "en" ? "CSV Only · Max 50 MB" : "CSV మాత్రమే · గరిష్టం 50 MB"}</span>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {UPLOAD_SLOTS.map((slot) => {
@@ -86,22 +117,23 @@ export default function HMDataView({ school, metrics }: Props) {
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(slot.id, f); e.target.value = ""; }}
                 />
                 {entry ? (
-                  <div className={`rounded-xl border-2 p-4 flex items-start gap-3 ${entry.state === "done" ? "border-green-300 bg-green-50" : "border-blue-300 bg-blue-50"}`}>
+                  <div className={`rounded-xl border-2 p-4 flex items-start gap-3 ${entry.state === "done" ? "border-green-300 bg-green-50" : entry.state === "error" ? "border-red-300 bg-red-50" : "border-blue-300 bg-blue-50"}`}>
                     <div className="mt-0.5">
                       {entry.state === "uploading" && <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />}
                       {entry.state === "done" && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      {entry.state === "error" && <AlertCircle className="h-4 w-4 text-red-600" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-zinc-800 truncate">{entry.name}</p>
                       <p className="text-[10px] text-zinc-500 mt-0.5">
-                        {entry.state === "uploading" ? (lang === "en" ? "Uploading…" : "అప్‌లోడ్ అవుతోంది…") : (lang === "en" ? "Uploaded successfully" : "విజయవంతంగా అప్‌లోడ్ అయింది")}
+                        {entry.state === "uploading" ? (lang === "en" ? "Uploading and processing…" : "అప్‌లోడ్ అవుతోంది…") : entry.state === "error" ? (lang === "en" ? "Upload failed" : "అప్‌లోడ్ విఫలమైంది") : (lang === "en" ? "Uploaded and processed" : "విజయవంతంగా అప్‌లోడ్ అయింది")}
                       </p>
                       <p className="text-[10px] text-zinc-400">{(entry.size / 1024).toFixed(1)} KB</p>
                     </div>
                     <button onClick={() => removeUpload(slot.id)} className="text-zinc-400 hover:text-zinc-700"><X className="h-4 w-4" /></button>
                   </div>
                 ) : (
-                  <button
+                  <div
                     className={`w-full rounded-xl border-2 border-dashed p-5 flex flex-col items-center gap-2 transition-colors cursor-pointer ${isDragging ? "border-[color:var(--ap-navy)] bg-blue-50" : "border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50"}`}
                     onClick={() => inputRefs.current[slot.id]?.click()}
                     onDragOver={(e) => { e.preventDefault(); setDragging(slot.id); }}
@@ -113,10 +145,16 @@ export default function HMDataView({ school, metrics }: Props) {
                       <p className="text-xs font-semibold text-zinc-700">{lang === "en" ? slot.label : slot.labelTE}</p>
                       <p className="text-[10px] text-zinc-400 mt-0.5">{slot.hint}</p>
                     </div>
-                    <span className="text-[10px] text-[color:var(--ap-navy)] font-medium">
-                      {lang === "en" ? "Click to browse or drag & drop" : "క్లిక్ చేయండి లేదా డ్రాగ్ చేయండి"}
-                    </span>
-                  </button>
+                    <a 
+                      href={slot.template} 
+                      download 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="mt-2 flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:underline z-10"
+                    >
+                      <Download className="h-3 w-3" />
+                      {lang === "en" ? "Download Template" : "టెంప్లేట్‌ను డౌన్‌లోడ్ చేయండి"}
+                    </a>
+                  </div>
                 )}
               </div>
             );
