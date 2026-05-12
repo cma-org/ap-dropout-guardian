@@ -6,7 +6,7 @@ import type { School, Mandal, Metrics } from "@/lib/types";
 import { fmtInt, pctFormat } from "@/lib/utils";
 import {
   Database, Users, BarChart2, CheckCircle, AlertCircle,
-  Upload, FileText, X, Loader2, CloudUpload,
+  Upload, FileText, X, Loader2, CloudUpload, Download
 } from "lucide-react";
 
 const DATA_SOURCES = [
@@ -19,10 +19,10 @@ const DATA_SOURCES = [
 ];
 
 const UPLOAD_SLOTS = [
-  { id: "attendance", label: "Attendance Register (CSV)", labelTE: "హాజరు రిజిస్టర్ (CSV)", accept: ".csv,.xlsx", hint: "FIN_YEAR format — CHILDSNO, month columns" },
-  { id: "marks", label: "FA/SA Marks (CSV / Excel)", labelTE: "FA/SA మార్కులు (CSV/Excel)", accept: ".csv,.xlsx", hint: "Subject-wise marks per student" },
-  { id: "dropout", label: "Dropout Register (CSV)", labelTE: "డ్రాపౌట్ రిజిస్టర్ (CSV)", accept: ".csv", hint: "CHILDSNO_Dropped format" },
-  { id: "schools", label: "School Location Master (CSV)", labelTE: "పాఠశాల స్థాన మాస్టర్ (CSV)", accept: ".csv,.xlsx", hint: "SCHOOL_CODE, lat, long, mandal, district" },
+  { id: "attendance", label: "Attendance Register (CSV)", labelTE: "హాజరు రిజిస్టర్ (CSV)", accept: ".csv,.xlsx", hint: "FIN_YEAR format — CHILDSNO, month columns", template: "/templates/attendance.csv?v=2" },
+  { id: "marks", label: "FA/SA Marks (CSV / Excel)", labelTE: "FA/SA మార్కులు (CSV/Excel)", accept: ".csv,.xlsx", hint: "Subject-wise marks per student", template: "/templates/marks.csv?v=2" },
+  { id: "dropout", label: "Dropout Register (CSV)", labelTE: "డ్రాపౌట్ రిజిస్టర్ (CSV)", accept: ".csv", hint: "CHILDSNO_Dropped format", template: "/templates/dropout.csv?v=2" },
+  { id: "schools", label: "School Location Master (CSV)", labelTE: "పాఠశాల స్థాన మాస్టర్ (CSV)", accept: ".csv,.xlsx", hint: "SCHOOL_CODE, lat, long, mandal, district", template: "/templates/schools.csv?v=2" },
 ];
 
 type UploadState = "idle" | "uploading" | "done" | "error";
@@ -239,6 +239,15 @@ export default function DistrictDataView({ schools, mandals, metrics }: Props) {
                     <span className="text-[10px] text-[color:var(--ap-navy)] font-medium">
                       {lang === "en" ? "Click to browse or drag & drop" : "క్లిక్ చేయండి లేదా డ్రాగ్ చేయండి"}
                     </span>
+                    <a
+                      href={slot.template}
+                      download
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-2 flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:underline z-10"
+                    >
+                      <Download className="h-3 w-3" />
+                      {lang === "en" ? "Download Template" : "టెంప్లేట్‌ను డౌన్‌లోడ్ చేయండి"}
+                    </a>
                   </button>
                 )}
               </div>
