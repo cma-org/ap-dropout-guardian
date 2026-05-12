@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
 /**
- * Proxy route so client components can fetch mandal data without exposing
- * API_URL or causing CORS issues. Forwards the request to the backend and
- * returns the response as-is.
+ * Proxy so client components can fetch user/teacher data without
+ * exposing API_URL or causing CORS issues.
+ * GET /api/users?role=teacher&schoolId=28161790952
  */
 export async function GET(request: Request) {
   const apiUrl = process.env.API_URL;
@@ -15,12 +15,16 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const district = searchParams.get("district");
-  const upstream = `${apiUrl}/api/mandals${district ? `?district=${encodeURIComponent(district)}` : ""}`;
+  const query = new URLSearchParams();
+  const role = searchParams.get("role");
+  const schoolId = searchParams.get("schoolId");
+  if (role) query.set("role", role);
+  if (schoolId) query.set("schoolId", schoolId);
 
-  const res = await fetch(upstream, {
-    cache: "no-store",
-  });
+  const qs = query.toString();
+  const upstream = `${apiUrl}/api/users${qs ? `?${qs}` : ""}`;
+
+  const res = await fetch(upstream, { cache: "no-store" });
 
   if (!res.ok) {
     return NextResponse.json(

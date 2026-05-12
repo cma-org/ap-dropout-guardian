@@ -98,6 +98,16 @@ export interface CounsellorTemplates {
   templates: Record<string, CounsellorTemplate>;
 }
 
+export interface Teacher {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  schoolId: number;
+  schoolName: string | null;
+  district: string | null;
+}
+
 export type Language = "en" | "te";
 
 export const TIER_COLORS: Record<RiskTier, string> = {

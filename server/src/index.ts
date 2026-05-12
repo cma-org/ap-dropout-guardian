@@ -13,6 +13,7 @@ import counsellorRouter from "./routes/counsellor";
 import webhooksRouter from "./routes/webhooks";
 import modelRouter from "./routes/model";
 import chatRouter from "./routes/chat";
+import usersRouter from "./routes/users";
 import { auditLog } from "./middleware/auditLog";
 import { dataRetentionPolicy } from "./middleware/dataRetention";
 
@@ -44,6 +45,7 @@ app.use("/api/counsellor-templates", counsellorRouter);
 app.use("/api/interventions", interventionsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/model", modelRouter);
+app.use("/api/users", usersRouter);
 app.use("/api/chat", chatRouter);
 
 app.get("/health", (_req, res) => {

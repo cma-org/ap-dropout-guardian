@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const res = await fetch(`${apiUrl}/api/schools`, {
-    next: { revalidate: 300 },
+    cache: "no-store",
   });
 
   if (!res.ok) {

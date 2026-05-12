@@ -19,7 +19,7 @@ export async function GET(
 
   const { schoolId } = await params;
   const res = await fetch(`${apiUrl}/api/schools/${schoolId}/roster`, {
-    next: { revalidate: 300 },
+    cache: "no-store",
   });
 
   if (!res.ok) {

@@ -11,6 +11,8 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "AP Stay-In School",
   description: "AI-powered early-warning system for secondary education — RTGS, Government of Andhra Pradesh",

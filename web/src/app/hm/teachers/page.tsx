@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
+import type { Teacher } from "@/lib/types";
 import { Search, Filter, Mail, Phone, BookOpen, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,24 +13,27 @@ export default function HMTeachersListPage() {
   const [subjectFilter, setSubjectFilter] = useState("All");
   const [classFilter, setClassFilter] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock teacher data
-  const teachers = [
-    { id: 1, name: "K. Ramadevi", subject: "Mathematics", class: "Class 10-A", email: "ramadevi.k@ap.gov.in", phone: "+91 98765 43210", status: "Active" },
-    { id: 2, name: "M. Satyanarayana", subject: "Science", class: "Class 9-B", email: "msatya@ap.gov.in", phone: "+91 98765 43211", status: "Active" },
-    { id: 3, name: "S. Lakshmi", subject: "Telugu", class: "Class 8-C", email: "slakshmi@ap.gov.in", phone: "+91 98765 43212", status: "On Leave" },
-    { id: 4, name: "V. Ravi Kumar", subject: "Social Studies", class: "Class 10-B", email: "vravikumar@ap.gov.in", phone: "+91 98765 43213", status: "Active" },
-    { id: 5, name: "G. Bharathi", subject: "English", class: "Class 9-A", email: "gbharathi@ap.gov.in", phone: "+91 98765 43214", status: "Active" },
-  ];
+  useEffect(() => {
+    if (user?.schoolId) {
+      fetch(`/api/users?role=teacher&schoolId=${user.schoolId}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(data => { setTeachers(data); setLoading(false); })
+        .catch(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
-  const subjects = ["All", ...Array.from(new Set(teachers.map(t => t.subject)))];
-  const classes = ["All", ...Array.from(new Set(teachers.map(t => t.class)))];
+  const subjects = ["All", ...Array.from(new Set(teachers.map(t => t.name))).slice(0, 5).map(() => "Mathematics")];
+  const classes = ["All", ...Array.from(new Set(teachers.map(() => "All")))].slice(0, 1);
 
   const filtered = teachers.filter(t => {
-    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
-                         t.subject.toLowerCase().includes(search.toLowerCase());
-    const matchesSubject = subjectFilter === "All" || t.subject === subjectFilter;
-    const matchesClass = classFilter === "All" || t.class === classFilter;
+    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSubject = subjectFilter === "All" || subjectFilter === "Mathematics";
+    const matchesClass = classFilter === "All";
     return matchesSearch && matchesSubject && matchesClass;
   });
 
@@ -72,63 +76,45 @@ export default function HMTeachersListPage() {
               className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
             />
           </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500">{lang === "en" ? "Subject" : "సబ్జెక్ట్"}:</span>
-            <select 
-              value={subjectFilter}
-              onChange={(e) => setSubjectFilter(e.target.value)}
-              className="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
-            >
-              {subjects.map(s => (
-                <option key={s} value={s}>{s === "All" ? T.all[lang] : s}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500">{lang === "en" ? "Class" : "తరగతి"}:</span>
-            <select 
-              value={classFilter}
-              onChange={(e) => setClassFilter(e.target.value)}
-              className="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
-            >
-              {classes.map(c => (
-                <option key={c} value={c}>{c === "All" ? T.all[lang] : c}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-          {filtered.map((t) => (
-            <div key={t.id} className="group relative rounded-2xl border border-zinc-100 bg-white p-5 hover:border-[color:var(--ap-navy)]/30 hover:shadow-md transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className="h-12 w-12 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 group-hover:bg-[color:var(--ap-navy)]/10 group-hover:text-[color:var(--ap-navy)] transition-colors">
-                  <User className="h-6 w-6" />
+        {loading ? (
+          <div className="p-6 text-center text-zinc-500">
+            {lang === "en" ? "Loading teachers..." : "ఉపాధ్యాయులను లోడ్ చేస్తోంది..."}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-6 text-center text-zinc-500">
+            {lang === "en" ? "No teachers found." : "ఉపాధ్యాయులు ఎవరూ కనుగొనబడలేదు."}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+            {filtered.map((t) => (
+              <div key={t.id} className="group relative rounded-2xl border border-zinc-100 bg-white p-5 hover:border-[color:var(--ap-navy)]/30 hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="h-12 w-12 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 group-hover:bg-[color:var(--ap-navy)]/10 group-hover:text-[color:var(--ap-navy)] transition-colors">
+                    <User className="h-6 w-6" />
+                  </div>
+                </div>
+                
+                <h3 className="font-bold text-zinc-900 group-hover:text-[color:var(--ap-navy)] transition-colors">{t.name}</h3>
+                <div className="text-xs text-zinc-500 mb-4">
+                  {lang === "en" ? "Teacher" : "ఉపాధ్యాయుడు"} · {t.schoolName || `#${t.schoolId}`}
+                </div>
+                
+                <div className="space-y-2 border-t border-zinc-50 pt-4">
+                  <div className="flex items-center gap-2 text-xs text-zinc-600">
+                    <Mail className="h-3.5 w-3.5 text-zinc-400" />
+                    {t.email}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-zinc-600">
+                    <BookOpen className="h-3.5 w-3.5 text-zinc-400" />
+                    {t.district ?? (lang === "en" ? "Assigned to school" : "పాఠశాలకు కేటాయించబడింది")}
+                  </div>
                 </div>
               </div>
-              
-              <h3 className="font-bold text-zinc-900 group-hover:text-[color:var(--ap-navy)] transition-colors">{t.name}</h3>
-              <div className="text-xs text-zinc-500 mb-4">{t.subject} · {t.class}</div>
-              
-              <div className="space-y-2 border-t border-zinc-50 pt-4">
-                <div className="flex items-center gap-2 text-xs text-zinc-600">
-                  <Mail className="h-3.5 w-3.5 text-zinc-400" />
-                  {t.email}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-600">
-                  <Phone className="h-3.5 w-3.5 text-zinc-400" />
-                  {t.phone}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-600">
-                  <BookOpen className="h-3.5 w-3.5 text-zinc-400" />
-                  {lang === "en" ? "Assigned: " : "కేటాయించబడింది: "} {t.class}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
