@@ -1,6 +1,7 @@
 "use client";
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useLang } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import type { School, Mandal, Metrics } from "@/lib/types";
 import { fmtInt, pctFormat } from "@/lib/utils";
 import {
@@ -27,11 +28,38 @@ const UPLOAD_SLOTS = [
 type UploadState = "idle" | "uploading" | "done" | "error";
 type FileEntry = { name: string; size: number; state: UploadState };
 
+type RecentUpload = { id: number; slotId: string; fileName: string; recordCount: number; createdAt: string; user?: { name: string } };
+
 type Props = { schools: School[]; mandals: Mandal[]; metrics: Metrics };
+
+function parseCsv(text: string) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim());
+  const records = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const values = lines[i].split(',').map(v => v.trim());
+    const record: any = {};
+    headers.forEach((h, idx) => { record[h] = values[idx]; });
+    records.push(record);
+  }
+  return records;
+}
+
+function formatDate(dateStr: string, lang: string) {
+  const date = new Date(dateStr);
+  if (lang === "te") {
+    return date.toLocaleDateString("te-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
 
 export default function DistrictDataView({ schools, mandals, metrics }: Props) {
   const { lang } = useLang();
+  const { user } = useAuth();
   const [uploads, setUploads] = useState<Record<string, FileEntry>>({});
+  const [recentUploads, setRecentUploads] = useState<RecentUpload[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -46,11 +74,79 @@ export default function DistrictDataView({ schools, mandals, metrics }: Props) {
     };
   }, [schools, mandals]);
 
-  function handleFile(slotId: string, file: File) {
+  useEffect(() => {
+    async function fetchRecentUploads() {
+      try {
+        const params = new URLSearchParams();
+        params.set("limit", "20");
+
+        const res = await fetch(`/api/upload?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRecentUploads(data.uploads || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch recent uploads:", err);
+      }
+    }
+    fetchRecentUploads();
+  }, []);
+
+  useEffect(() => {
+    const completedSlots = Object.entries(uploads)
+      .filter(([, entry]) => entry.state === "done")
+      .map(([slotId, entry]) => {
+        const recentMatch = recentUploads.find(u => u.slotId === slotId);
+        return {
+          id: recentMatch?.id ?? Date.now(),
+          slotId,
+          fileName: entry.name,
+          recordCount: 0,
+          createdAt: recentMatch?.createdAt ?? new Date().toISOString(),
+          user: user ? { name: user.name } : undefined,
+        };
+      });
+
+    if (completedSlots.length > 0) {
+      setRecentUploads(prev => {
+        const existingIds = new Set(completedSlots.map(s => s.id));
+        const filteredPrev = prev.filter(u => !existingIds.has(u.id));
+        return [...completedSlots, ...filteredPrev].slice(0, 20);
+      });
+    }
+  }, [uploads, user]);
+
+  async function handleFile(slotId: string, file: File) {
     setUploads((u) => ({ ...u, [slotId]: { name: file.name, size: file.size, state: "uploading" } }));
-    setTimeout(() => {
-      setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "done" } }));
-    }, 1800);
+    try {
+      const text = await file.text();
+      const records = parseCsv(text);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slotId,
+          records,
+          fileName: file.name,
+          userId: user?.id,
+        })
+      });
+      if (res.ok) {
+        setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "done" } }));
+        const params = new URLSearchParams();
+        params.set("limit", "20");
+        const recentRes = await fetch(`/api/upload?${params}`);
+        if (recentRes.ok) {
+          const data = await recentRes.json();
+          setRecentUploads(data.uploads || []);
+        }
+      } else {
+        setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "error" } }));
+      }
+    } catch (err) {
+      console.error(err);
+      setUploads((u) => ({ ...u, [slotId]: { ...u[slotId], state: "error" } }));
+    }
   }
 
   function removeUpload(slotId: string) {
@@ -73,7 +169,7 @@ export default function DistrictDataView({ schools, mandals, metrics }: Props) {
           { icon: <Users className="h-4 w-4" />, label: lang === "en" ? "Students Tracked" : "విద్యార్థులు", value: fmtInt(stats.students) },
           { icon: <AlertCircle className="h-4 w-4 text-orange-500" />, label: lang === "en" ? "At-Risk Flagged" : "ప్రమాదంలో", value: fmtInt(stats.flagged) },
           { icon: <BarChart2 className="h-4 w-4 text-blue-600" />, label: lang === "en" ? "Model Recall" : "రీకాల్", value: pctFormat(metrics.test_oot.recall, 1) },
-          { icon: <Database className="h-4 w-4 text-violet-600" />, label: lang === "en" ? "Files Uploaded" : "అప్‌లోడ్ ఫైళ్లు", value: Object.values(uploads).filter((u) => u.state === "done").length.toString() },
+          { icon: <Database className="h-4 w-4 text-violet-600" />, label: lang === "en" ? "Files Uploaded" : "అప్‌లోడ్ ఫైళ్లు", value: recentUploads.length.toString() },
         ].map((c) => (
           <div key={c.label} className="rounded-xl border bg-white px-5 py-4">
             <div className="flex items-center gap-2 text-zinc-400 mb-2">{c.icon}<span className="text-xs font-medium">{c.label}</span></div>
@@ -148,6 +244,49 @@ export default function DistrictDataView({ schools, mandals, metrics }: Props) {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Recent uploads */}
+      <div className="rounded-xl border bg-white overflow-hidden">
+        <div className="px-6 py-4 border-b bg-zinc-50 flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <h2 className="font-semibold text-zinc-900 text-sm">{lang === "en" ? "Recent Uploads" : "ఇటీవల అప్‌లోడ్‌లు"}</h2>
+          <span className="ml-auto text-[10px] text-zinc-400">{lang === "en" ? "Last 20 uploads" : "చివరి 20 అప్‌లోడ్‌లు"}</span>
+        </div>
+        <div className="divide-y max-h-64 overflow-y-auto">
+          {recentUploads.length === 0 ? (
+            <div className="px-6 py-8 text-center text-zinc-500 text-sm">
+              {lang === "en" ? "No recent uploads." : "ఇటీవల అప్‌లోడ్‌లు లేవు."}
+            </div>
+          ) : (
+            recentUploads.map((upload) => (
+              <div key={upload.id} className="px-6 py-3 flex items-center gap-4">
+                <div className="mt-0.5">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-zinc-800 truncate">{upload.fileName}</p>
+                  <p className="text-[10px] text-zinc-500">
+                    {UPLOAD_SLOTS.find(s => s.id === upload.slotId)?.labelTE ?? upload.slotId}
+                    {upload.recordCount > 0 && ` · ${upload.recordCount} records`}
+                  </p>
+                </div>
+                <div className="w-32 sm:w-48 shrink-0 flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-zinc-100 flex items-center justify-center border border-zinc-200 hidden sm:flex">
+                    <Users className="h-3 w-3 text-zinc-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-zinc-400 leading-none mb-0.5">{lang === "en" ? "Uploaded by" : "అప్‌లోడ్ చేసినవారు"}</p>
+                    <p className="text-xs text-zinc-700 truncate font-medium">{upload.user?.name || (lang === "en" ? "Unknown" : "తెలియదు")}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-zinc-400">{formatDate(upload.createdAt, lang)}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
