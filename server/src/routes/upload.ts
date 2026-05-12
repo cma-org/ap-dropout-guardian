@@ -17,7 +17,11 @@ uploadRouter.post("/", async (req, res) => {
     for (const record of records) {
       if (!record.CHILDSNO) continue;
       const childSno = parseInt(record.CHILDSNO);
-      if (isNaN(childSno)) continue;
+      // Validate childSno is within INT4 range (-2147483648 to 2147483647)
+      if (isNaN(childSno) || childSno < -2147483648 || childSno > 2147483647) {
+        console.warn(`Skipping invalid childSno: ${record.CHILDSNO}`);
+        continue;
+      }
 
       if (slotId === "attendance") {
         if (record.attendanceRate) {
