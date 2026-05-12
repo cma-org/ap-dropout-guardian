@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
+import { requireInternalOrAuth } from "../middleware/internalAuth";
 
 const router = Router();
 
 // GET /api/users?role=teacher&schoolId=28161790952
-router.get("/", async (req, res) => {
+router.get("/", requireInternalOrAuth, async (req, res) => {
   try {
     const { role, schoolId } = req.query as { role?: string; schoolId?: string };
 

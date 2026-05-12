@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import { I18nProvider } from "@/lib/i18n";
-import { AuthProvider } from "@/lib/auth";
-import LayoutWrapper from "@/components/LayoutWrapper";
-import ConsentModal from "@/components/ConsentModal";
+import ClientShell from "@/components/ClientShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,14 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full">
-        <AuthProvider>
-          <I18nProvider>
-            <ConsentModal />
-            <LayoutWrapper>
-              {children}
-            </LayoutWrapper>
-          </I18nProvider>
-        </AuthProvider>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var w=window;function suppress(e){var f=e.filename||(e.error&&e.error.stack)||'';if(f.indexOf('chrome-extension://')!==-1){e.stopImmediatePropagation();e.preventDefault()}}w.addEventListener('error',suppress);w.addEventListener('unhandledrejection',function(e){if(e.reason&&e.reason.stack&&e.reason.stack.indexOf('chrome-extension://')!==-1){e.stopImmediatePropagation();e.preventDefault()}})})();`,
+          }}
+        />
+        <ClientShell>{children}</ClientShell>
       </body>
     </html>
   );

@@ -1,12 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+
+const apiUrl = process.env.API_URL;
+const internalKey = process.env.INTERNAL_API_KEY;
+
+function internalHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "x-internal-key": internalKey ?? "",
+  };
+}
 
 /**
  * Proxy so client components can fetch user/teacher data without
  * exposing API_URL or causing CORS issues.
  * GET /api/users?role=teacher&schoolId=28161790952
  */
-export async function GET(request: Request) {
-  const apiUrl = process.env.API_URL;
+export async function GET(request: NextRequest) {
   if (!apiUrl) {
     return NextResponse.json(
       { error: "API_URL environment variable is not configured." },
@@ -14,25 +23,23 @@ export async function GET(request: Request) {
     );
   }
 
-  const { searchParams } = new URL(request.url);
-  const query = new URLSearchParams();
-  const role = searchParams.get("role");
-  const schoolId = searchParams.get("schoolId");
-  if (role) query.set("role", role);
-  if (schoolId) query.set("schoolId", schoolId);
+  const role = request.nextUrl.searchParams.get("role");
+  const schoolId = request.nextUrl.searchParams.get("schoolId");
 
-  const qs = query.toString();
+  const params = new URLSearchParams();
+  if (role) params.set("role", role);
+  if (schoolId) params.set("schoolId", schoolId);
+  const qs = params.toString();
   const upstream = `${apiUrl}/api/users${qs ? `?${qs}` : ""}`;
 
-  const res = await fetch(upstream, { cache: "no-store" });
-
-  if (!res.ok) {
-    return NextResponse.json(
-      { error: `Backend returned ${res.status}` },
-      { status: res.status }
-    );
+  try {
+    const res = await fetch(upstream, {
+      headers: internalHeaders(),
+      cache: "no-store",
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json({ error: "Backend unreachable" }, { status: 503 });
   }
-
-  const data = await res.json();
-  return NextResponse.json(data);
 }
