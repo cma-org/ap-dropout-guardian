@@ -1,5 +1,6 @@
 "use client";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import { useState, useEffect } from "react";
+import { MapContainer, TileLayer, CircleMarker, Popup, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { School } from "@/lib/types";
 import { pctFormat, fmtInt } from "@/lib/utils";
@@ -25,6 +26,14 @@ export default function SchoolMap({
   onSchoolSelect?: (school: School) => void;
 }) {
   const filtered = schools.filter((s) => s.n_students >= 20);
+  const [geoData, setGeoData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/data/ap_districts.geojson")
+      .then(res => res.json())
+      .then(data => setGeoData(data))
+      .catch(err => console.error("Failed to load district outlines", err));
+  }, []);
 
   return (
     <MapContainer center={AP_CENTER} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
@@ -32,6 +41,18 @@ export default function SchoolMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {geoData && (
+        <GeoJSON
+          data={geoData}
+          style={{
+            fillColor: "transparent",
+            color: "#1e40af", // dark blue
+            weight: 1.5,
+            opacity: 0.6,
+            dashArray: "3 3",
+          }}
+        />
+      )}
       {filtered.map((s) => (
         <CircleMarker
           key={s.school_id}
