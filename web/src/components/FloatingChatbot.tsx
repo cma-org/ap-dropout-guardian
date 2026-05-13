@@ -641,8 +641,8 @@ export default function FloatingChatbot() {
       <button
         onClick={() => setOpen(v => !v)}
         className={cn(
-          "fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-xl font-medium text-sm transition-all",
-          open ? "bg-zinc-800 text-white" : "bg-[color:var(--ap-navy)] text-white hover:opacity-90"
+          "fixed bottom-18 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-xl font-medium text-sm transition-all ",
+          open ? "bottom-6 bg-zinc-800 text-white" : "bg-[color:var(--ap-navy)] text-white hover:opacity-90"
         )}
       >
         {open ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}

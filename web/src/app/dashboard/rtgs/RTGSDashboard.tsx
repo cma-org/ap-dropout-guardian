@@ -300,7 +300,8 @@ export default function RTGSDashboard({
                     <td className={cn("px-4 py-2 text-right tabular-nums font-medium", s.n_flagged > 10 ? "text-red-600" : "text-amber-600")}>{fmtInt(s.n_flagged)}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-zinc-600">{pctFormat(s.avg_risk, 1)}</td>
                     <td className="px-4 py-2">
-                      <Link href="/teacher" className="text-[color:var(--ap-navy)] hover:underline text-xs flex items-center gap-1">
+                    <Link href={`/dashboard/sed/districts/${encodeURIComponent(drillDistrict ?? "")}?id=${s.school_id}`} className="text
+          +-[color:var(--ap-navy)] hover:underline text-xs flex items-center gap-1">
                         {T.rtgs.view[lang]} <ArrowUpRight className="h-3 w-3" />
                       </Link>
                     </td>

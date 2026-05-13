@@ -11,13 +11,31 @@ function internalHeaders() {
   };
 }
 
-// GET /api/alerts?schoolId=<n>
+// Deterministic hash function to match analytics page enrichment
+function rosterExtras(child_sno: number) {
+  const h1 = Math.imul(child_sno, 2654435761) >>> 0;
+  const h2 = Math.imul(h1 ^ (h1 >>> 16), 2246822519) >>> 0;
+  const h3 = Math.imul(h2 ^ (h2 >>> 13), 3266489917) >>> 0;
+  const h4 = Math.imul(h3 ^ (h3 >>> 16), 2654435761) >>> 0;
+  return {
+    grade: 6 + (h1 % 5),
+    migration_flag: (h2 % 7) === 0 ? 1 : 0,
+    transport_allowance: (h3 % 4) === 0 ? 1 : 0,
+    caste_clean: 1 + (h4 % 4),
+    parent_literacy: 1 + (h1 % 3),
+    family_income_bracket: 1 + (h2 % 4),
+    attendance_fallback: 0.55 + (h3 % 45) / 100,
+  };
+}
+
+// GET /api/alerts?schoolId=<n>&grade=<n>
 export async function GET(request: NextRequest) {
   if (!apiUrl) {
     return NextResponse.json({ error: "API_URL not configured" }, { status: 503 });
   }
 
   const schoolId = request.nextUrl.searchParams.get("schoolId");
+  const grade = request.nextUrl.searchParams.get("grade");
 
   if (!schoolId) {
     return NextResponse.json({ error: "schoolId is required" }, { status: 400 });
@@ -37,11 +55,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const roster: RosterStudent[] = await rosterRes.json();
+    let roster: any[] = await rosterRes.json();
+
+    // Enrich roster with generated fields (same as teacher analytics page)
+    roster = roster.map((s) => {
+      const e = rosterExtras(s.child_sno);
+      const student = s as any;
+      return {
+        ...s,
+        grade: student.grade ?? e.grade,
+        caste_clean: student.caste_clean ?? e.caste_clean,
+        parent_literacy: student.parent_literacy ?? e.parent_literacy,
+        migration_flag: student.migration_flag ?? e.migration_flag,
+        transport_allowance: student.transport_allowance ?? e.transport_allowance,
+        family_income_bracket: student.family_income_bracket ?? e.family_income_bracket,
+        attendance_rate: student.attendance_rate ?? e.attendance_fallback,
+      };
+    });
+
+    // Filter by grade if provided (for teacher view)
+    if (grade !== null) {
+      const gradeNum = parseInt(grade, 10);
+      roster = roster.filter((student) => student.grade === gradeNum);
+    }
 
     // Generate alerts from roster data based on risk tiers
     const alerts: Alert[] = roster
-      .filter((student) => student.tier === "Critical" || student.tier === "High" || student.tier === "Medium")
+      .filter((student: any) => student.tier === "Critical" || student.tier === "High" || student.tier === "Medium")
       .map((student, index) => {
         // Determine alert priority based on tier
         const priority: AlertPriority = student.tier === "Critical" ? "critical" :

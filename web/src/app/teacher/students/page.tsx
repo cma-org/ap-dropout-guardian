@@ -63,7 +63,7 @@ export default function StudentsListPage() {
         .then(data => {
           const withExtras = data.map((s: any) => ({
             ...s,
-            grade: s.grade || rosterExtras(s.child_sno).grade,
+            grade: rosterExtras(s.child_sno).grade,
           }));
           setStudents(withExtras);
           setLoading(false);
@@ -95,7 +95,9 @@ export default function StudentsListPage() {
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">{T.nav.students[lang]}</h1>
           <p className="text-zinc-500">
-            {user?.schoolName || (lang === "en" ? "Your School" : "మీ పాఠశాల")} · {students.length} {T.common.totalStudents[lang]}
+            {user?.schoolName || (lang === "en" ? "Your School" : "మీ పాఠశాల")} · {user?.role === "teacher" && user.grade
+              ? `${user.grade}${lang === "en" ? "th Grade" : "వ తరగతి"}`
+              : ""} · {filtered.length} {T.common.totalStudents[lang]}
           </p>
         </div>
         <div className="flex items-center gap-2">

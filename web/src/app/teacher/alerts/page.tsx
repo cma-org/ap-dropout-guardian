@@ -25,7 +25,12 @@ export default function AlertsPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/alerts?schoolId=${user.schoolId}`);
+      // Build URL with grade parameter for teacher
+      const params = new URLSearchParams({ schoolId: String(user.schoolId) });
+      if (user.role === "teacher" && user.grade) {
+        params.set("grade", String(user.grade));
+      }
+      const response = await fetch(`/api/alerts?${params.toString()}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch alerts: ${response.status}`);
@@ -37,7 +42,6 @@ export default function AlertsPage() {
     } catch (err) {
       console.error("Error fetching alerts:", err);
       setError(err instanceof Error ? err.message : "Failed to load alerts");
-      // Fall back to empty state
       setAlerts([]);
       setStats({ critical: 0, high: 0, medium: 0, pending: 0, total: 0 });
     } finally {
