@@ -26,7 +26,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       <div className="flex flex-1 min-h-0">
         {user && <Sidebar />}
         <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-6">
+          <main className={`flex-1 w-full ${pathname === '/' ? '' : 'max-w-[1400px] mx-auto px-6 py-6'}`}>
             {children}
           </main>
           {/* <footer className="text-center text-xs text-zinc-500 py-4 border-t border-zinc-200">
