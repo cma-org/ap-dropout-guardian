@@ -1,13 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import type { School, Mandal } from "@/lib/types";
+import type { School, Mandal, DistrictInfo, MandalInfo } from "@/lib/types";
 import { useLang, T } from "@/lib/i18n";
 import { fmtInt, pctFormat, cn } from "@/lib/utils";
-import { MapPin, Users, AlertTriangle, X, ExternalLink } from "lucide-react";
+import { MapPin, Users, AlertTriangle, X, ExternalLink, Building2, ChevronDown, ChevronUp } from "lucide-react";
+import SchoolMap from "./SchoolMap";
 
-const SchoolMap = dynamic(() => import("./SchoolMap"), {
+const SchoolMapComponent = dynamic(() => import("./SchoolMap"), {
   ssr: false,
   loading: () => <div className="text-sm text-zinc-500 p-8">Loading map…</div>,
 });
@@ -91,10 +92,225 @@ function SchoolDetailPanel({ school, onClose, lang }: { school: School; onClose:
   );
 }
 
-export default function MapView({ schools, topMandals }: { schools: School[]; topMandals: Mandal[] }) {
+function DistrictDetailPanel({
+  district,
+  schools,
+  onClose,
+  lang,
+}: {
+  district: DistrictInfo;
+  schools: School[];
+  onClose: () => void;
+  lang: "en" | "te";
+}) {
+  const { label, color } = riskLabel(district.avg_risk);
+  const pct = district.n_students > 0 ? (district.n_flagged / district.n_students) * 100 : 0;
+  const [expandedSchools, setExpandedSchools] = useState(false);
+
+  // Sort schools by risk (highest first) and take top 10
+  const topSchools = [...schools]
+    .filter(s => s.n_students >= 20)
+    .sort((a, b) => b.avg_risk - a.avg_risk)
+    .slice(0, 10);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-1">
+            <Building2 className="h-3 w-3" />
+            <span>{lang === "en" ? "District" : "జిల్లా"}</span>
+          </div>
+          <h2 className="text-lg font-semibold text-zinc-900 leading-snug">{district.name}</h2>
+        </div>
+        <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 shrink-0 mt-0.5">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold w-fit mb-4 ${color}`}>
+        <AlertTriangle className="h-3 w-3" />
+        {label} risk zone
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="rounded-lg border bg-zinc-50 p-3 text-center">
+          <div className="text-2xl font-bold text-zinc-900">{fmtInt(district.n_students)}</div>
+          <div className="text-[11px] text-zinc-500 flex items-center justify-center gap-1 mt-0.5">
+            <Users className="h-3 w-3" /> {lang === "en" ? "Students" : "విద్యార్థులు"}
+          </div>
+        </div>
+        <div className="rounded-lg border bg-red-50 p-3 text-center">
+          <div className="text-2xl font-bold text-red-700">{fmtInt(district.n_flagged)}</div>
+          <div className="text-[11px] text-red-500 flex items-center justify-center gap-1 mt-0.5">
+            <AlertTriangle className="h-3 w-3" /> {lang === "en" ? "At-risk" : "ప్రమాదంలో"}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="rounded-lg border bg-blue-50 p-3 text-center">
+          <div className="text-2xl font-bold text-blue-700">{district.n_schools}</div>
+          <div className="text-[11px] text-blue-500 flex items-center justify-center gap-1 mt-0.5">
+            <MapPin className="h-3 w-3" /> {lang === "en" ? "Schools" : "పాఠశాలలు"}
+          </div>
+        </div>
+        <div className="rounded-lg border bg-zinc-50 p-3 text-center">
+          <div className="text-2xl font-bold text-zinc-900">{pct.toFixed(1)}%</div>
+          <div className="text-[11px] text-zinc-500 flex items-center justify-center gap-1 mt-0.5">
+            {lang === "en" ? "At-risk %" : "ప్రమాద %"}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <div className="flex items-center justify-between text-xs mb-1">
+          <span className="text-zinc-600">{lang === "en" ? "At-risk rate" : "ప్రమాద రేటు"}</span>
+          <span className="font-semibold text-zinc-800">{pct.toFixed(1)}%</span>
+        </div>
+        <div className="h-2 rounded-full bg-zinc-100 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${Math.min(100, pct)}%`,
+              backgroundColor: pct >= 8 ? "#dc2626" : pct >= 5 ? "#f97316" : pct >= 3 ? "#eab308" : "#16a34a",
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-3 mb-4 bg-white">
+        <div className="text-xs text-zinc-500 mb-0.5">{lang === "en" ? "Average dropout probability" : "సగటు డ్రాపౌట్ సంభావ్యత"}</div>
+        <div className="text-lg font-bold text-zinc-900">{pctFormat(district.avg_risk, 1)}</div>
+        <div className="text-[10px] text-zinc-400">{lang === "en" ? "XGBoost model output, AY 2024-25" : "XGBoost మోడల్, AY 2024-25"}</div>
+      </div>
+
+      {/* Top Schools in District */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <button
+          onClick={() => setExpandedSchools(!expandedSchools)}
+          className="flex items-center justify-between w-full text-left mb-2 group"
+        >
+          <span className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">
+            {lang === "en" ? "Top At-Risk Schools" : "అత్యధిక ప్రమాద పాఠశాలలు"}
+          </span>
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
+            <span>{topSchools.length}</span>
+            {expandedSchools ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </div>
+        </button>
+
+        <div className={cn("overflow-y-auto flex-1 transition-all", expandedSchools ? "max-h-[300px]" : "max-h-[150px]")}>
+          <div className="space-y-1">
+            {topSchools.map((school) => {
+              const schoolRisk = riskLabel(school.avg_risk);
+              const schoolPct = school.n_students > 0 ? (school.n_flagged / school.n_students) * 100 : 0;
+              return (
+                <div
+                  key={school.school_id}
+                  className="p-2 rounded-lg border bg-zinc-50 hover:bg-zinc-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-zinc-900 truncate">{school.school_name}</div>
+                      <div className="text-[10px] text-zinc-500 truncate">{school.mandal_name}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={cn("text-xs font-bold", schoolRisk.label === "Critical" ? "text-red-600" : schoolRisk.label === "High" ? "text-orange-600" : "text-amber-600")}>
+                        {pctFormat(school.avg_risk, 0)}
+                      </div>
+                      <div className="text-[10px] text-zinc-400">
+                        {school.n_flagged}/{school.n_students}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-auto pt-4 border-t border-zinc-200">
+        <Link
+          href={`/dashboard/sed/districts/${encodeURIComponent(district.name)}`}
+          className="flex items-center justify-center gap-2 rounded-lg bg-[color:var(--ap-navy)] text-white text-sm font-medium py-2.5 hover:opacity-90 transition"
+        >
+          <ExternalLink className="h-4 w-4" />
+          {lang === "en" ? "View all schools in district" : "జిల్లాలోని అన్ని పాఠశాలలను చూడండి"}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function MapView({ schools, mandals, topMandals }: { schools: School[]; mandals: MandalInfo[]; topMandals: Mandal[] }) {
   const { lang } = useLang();
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<DistrictInfo | null>(null);
   const [hoveredMandal, setHoveredMandal] = useState<Mandal | null>(null);
+
+  // Calculate district statistics from schools
+  const districtStats = useMemo(() => {
+    const stats = schools.reduce((acc, school) => {
+      const district = school.district_name || "Unknown";
+      if (!acc[district]) {
+        acc[district] = {
+          name: district,
+          n_students: 0,
+          n_flagged: 0,
+          avg_risk_sum: 0,
+          n_schools: 0,
+          schools: [] as School[],
+        };
+      }
+      acc[district].n_students += school.n_students;
+      acc[district].n_flagged += school.n_flagged;
+      acc[district].avg_risk_sum += school.avg_risk * school.n_students;
+      acc[district].n_schools += 1;
+      acc[district].schools.push(school);
+      return acc;
+    }, {} as Record<string, { name: string; n_students: number; n_flagged: number; avg_risk_sum: number; n_schools: number; schools: School[] }>);
+
+    const districtInfos: Record<string, DistrictInfo> = {};
+    for (const [name, s] of Object.entries(stats)) {
+      districtInfos[name] = {
+        name,
+        n_students: s.n_students,
+        n_flagged: s.n_flagged,
+        avg_risk: s.n_students > 0 ? s.avg_risk_sum / s.n_students : 0,
+        n_schools: s.n_schools,
+        schools: s.schools,
+      };
+    }
+    return districtInfos;
+  }, [schools]);
+
+  const handleDistrictSelect = (districtName: string) => {
+    // Normalize district names for comparison (handle case differences)
+    const normalizedInput = districtName.toLowerCase().trim();
+    const district = Object.values(districtStats).find(
+      d => d.name.toLowerCase().trim() === normalizedInput
+    );
+    if (district) {
+      setSelectedDistrict(district);
+      setSelectedSchool(null);
+    }
+  };
+
+  const handleSchoolSelect = (school: School) => {
+    setSelectedSchool(school);
+    setSelectedDistrict(null);
+  };
+
+  const handleClose = () => {
+    setSelectedSchool(null);
+    setSelectedDistrict(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -102,12 +318,22 @@ export default function MapView({ schools, topMandals }: { schools: School[]; to
         <h1 className="text-2xl font-semibold text-zinc-900">{T.map.title[lang]}</h1>
         <p className="text-sm text-zinc-600 mt-1">{T.map.hint[lang]}</p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
         <div className="rounded-xl border bg-white overflow-hidden relative" style={{ height: "640px" }}>
-          <SchoolMap schools={schools} onSchoolSelect={setSelectedSchool} />
+          <SchoolMapComponent
+            schools={schools}
+            mandals={mandals}
+            onSchoolSelect={handleSchoolSelect}
+            onDistrictSelect={handleDistrictSelect}
+            onSelectedDistrictChange={(districtName) => {
+              if (!districtName && selectedDistrict) {
+                setSelectedDistrict(null);
+              }
+            }}
+          />
 
           {/* Hover overlay card for mandal list */}
-          {hoveredMandal && !selectedSchool && (
+          {hoveredMandal && !selectedSchool && !selectedDistrict && (
             <div className="absolute top-4 right-4 z-[1000] w-64 p-4 bg-white rounded-xl shadow-2xl border-2 border-[color:var(--ap-navy)]/20">
               <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Mandal Snapshot</div>
               <h3 className="text-lg font-bold text-zinc-900 leading-tight mb-0.5">{hoveredMandal.mandal_name}</h3>
@@ -141,10 +367,17 @@ export default function MapView({ schools, topMandals }: { schools: School[]; to
         </div>
 
         <aside className="rounded-xl border bg-white p-4">
-          {selectedSchool ? (
+          {selectedDistrict ? (
+            <DistrictDetailPanel
+              district={selectedDistrict}
+              schools={selectedDistrict.schools}
+              onClose={handleClose}
+              lang={lang}
+            />
+          ) : selectedSchool ? (
             <SchoolDetailPanel
               school={selectedSchool}
-              onClose={() => setSelectedSchool(null)}
+              onClose={handleClose}
               lang={lang}
             />
           ) : (
@@ -176,7 +409,14 @@ export default function MapView({ schools, topMandals }: { schools: School[]; to
                   </li>
                 ))}
               </ol>
-              <p className="text-[11px] text-zinc-400 mt-4">{lang === "en" ? "Tap any school dot on the map to see details here." : "వివరాలు చూడటానికి మ్యాప్‌పై పాఠశాల బిందువును నొక్కండి."}</p>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-xs text-blue-700">
+                  <strong>{lang === "en" ? "Tip:" : "చిట్కా:"}</strong>{" "}
+                  {lang === "en"
+                    ? "Click on any district area or school marker on the map to see details."
+                    : "వివరాలు చూడటానికి మ్యాప్‌పై ఏదైనా జిల్లా ప్రాంతం లేదా పాఠశాల మార్కర్‌పై క్లిక్ చేయండి."}
+                </p>
+              </div>
             </>
           )}
         </aside>

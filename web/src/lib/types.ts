@@ -24,6 +24,25 @@ export interface Mandal {
   longitude: number | null;
 }
 
+export interface MandalInfo {
+  mandal_name: string;
+  district_name: string;
+  n_students: number;
+  n_flagged: number;
+  avg_risk: number;
+  latitude: number;
+  longitude: number;
+}
+
+export interface DistrictInfo {
+  name: string;
+  n_students: number;
+  n_flagged: number;
+  avg_risk: number;
+  n_schools: number;
+  schools: School[];
+}
+
 export interface RosterStudent {
   child_sno: number;
   gender_label: string;
