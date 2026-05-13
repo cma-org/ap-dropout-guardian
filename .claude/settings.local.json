@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Naveen\\\\Documents\\\\project\\\\ap-dropout-guardian\" -Force)",
+      "Bash(Format-Table Name, Mode -AutoSize)"
+    ]
+  }
+}

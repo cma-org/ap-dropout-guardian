@@ -4,12 +4,21 @@ import { usePathname } from "next/navigation";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_DASHBOARD } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity, BookOpen, Heart, Building2 } from "lucide-react";
+import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity, BookOpen, Heart, Building2, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Sidebar() {
   const { lang } = useLang();
   const { user } = useAuth();
   const path = usePathname();
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    const storedAlerts = localStorage.getItem("alerts_count");
+    if (storedAlerts) {
+      setAlertCount(parseInt(storedAlerts, 10));
+    }
+  }, []);
 
   const getNav = () => {
     const nav = [];
@@ -25,12 +34,14 @@ export default function Sidebar() {
       // Role specific pages
       if (user.role === "teacher") {
         nav.push({ href: "/teacher/students", label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
+        nav.push({ href: "/teacher/alerts", label: T.nav.alerts[lang], icon: <Bell className="h-4 w-4" />, badge: alertCount > 0 ? alertCount : undefined });
         nav.push({ href: "/teacher/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
         nav.push({ href: "/teacher/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
       }
 
       if (user.role === "hm") {
         nav.push({ href: "/hm/students", label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
+        nav.push({ href: "/hm/alerts", label: T.nav.alerts[lang], icon: <Bell className="h-4 w-4" />, badge: alertCount > 0 ? alertCount : undefined });
         nav.push({ href: "/hm/teachers", label: T.nav.teachers[lang], icon: <Users className="h-4 w-4" /> });
         nav.push({ href: "/hm/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
         nav.push({ href: "/hm/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
@@ -78,9 +89,10 @@ export default function Sidebar() {
             </div>
             <nav className="space-y-1">
               {navItems.filter(n => !n.href.includes('overview') && !n.href.includes('map') && !n.href.includes('community') && !n.href.includes('api-docs')).map((n) => {
-                const active = n.href === "/" 
-                  ? path === "/" 
+                const active = n.href === "/"
+                  ? path === "/"
                   : (user && n.href === ROLE_DASHBOARD[user.role] ? path === n.href : path.startsWith(n.href));
+                const isAlert = n.href.includes('/alerts');
                 return (
                   <Link
                     key={n.href}
@@ -93,10 +105,15 @@ export default function Sidebar() {
                     )}
                   >
                     <div className={cn(
-                      "p-1.5 rounded-lg transition-colors",
-                      active ? "bg-[color:var(--ap-navy)] text-white" : "bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-600"
+                      "p-1.5 rounded-lg transition-colors relative",
+                      active ? "bg-[color:var(--ap-navy)] text-white" : isAlert ? "bg-red-100 text-red-600" : "bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-600"
                     )}>
                       {n.icon}
+                      {n.badge && (
+                        <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold bg-red-600 text-white rounded-full">
+                          {n.badge > 99 ? '99+' : n.badge}
+                        </span>
+                      )}
                     </div>
                     {n.label}
                     {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[color:var(--ap-navy)]" />}

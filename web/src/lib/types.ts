@@ -130,3 +130,38 @@ export const TIER_BG_SOFT: Record<RiskTier, string> = {
   Medium: "bg-yellow-50",
   Low: "bg-emerald-50",
 };
+
+export type AlertPriority = "critical" | "high" | "medium";
+export type AlertStatus = "pending" | "acknowledged" | "resolved" | "escalated";
+
+export interface Alert {
+  id: string;
+  studentId: number;
+  studentName: string;
+  schoolName: string;
+  grade: number;
+  gender: string;
+  priority: AlertPriority;
+  status: AlertStatus;
+  category: "attendance" | "academic" | "behavioral" | "migration" | "综合";
+  riskScore: number;
+  attendanceRate: number;
+  avgMarks: number | null;
+  consecutiveAbsences: number;
+  lastContacted: string | null;
+  createdAt: string;
+  updatedAt: string;
+  drivers: string[];
+  recommendations: string[];
+  escalated: boolean;
+  interventionType?: string;
+  notes?: string;
+}
+
+export interface AlertStats {
+  critical: number;
+  high: number;
+  medium: number;
+  pending: number;
+  total: number;
+}

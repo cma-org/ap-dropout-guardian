@@ -1,6 +1,6 @@
 import "server-only";
 import type {
-  Metrics, Mandal, School, StudentDetail, RosterStudent, CounsellorTemplates, Teacher,
+  Metrics, Mandal, School, StudentDetail, RosterStudent, CounsellorTemplates, Teacher, Alert, AlertStats,
 } from "./types";
 
 // API_URL is required — the app does not fall back to local JSON files.
@@ -93,6 +93,14 @@ export async function getModelVersion(): Promise<Record<string, unknown> | null>
 
 export async function getTeachers(schoolId: number): Promise<Teacher[]> {
   return apiFetch<Teacher[]>(`/api/users?role=teacher&schoolId=${schoolId}`);
+}
+
+export async function getAlerts(schoolId: number): Promise<{ alerts: Alert[]; stats: AlertStats } | null> {
+  try {
+    return await apiFetch<{ alerts: Alert[]; stats: AlertStats }>(`/api/alerts?schoolId=${schoolId}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function getModelChangelog(): Promise<unknown[] | null> {
