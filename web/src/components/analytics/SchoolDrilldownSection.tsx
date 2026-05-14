@@ -6,18 +6,30 @@ import { fmtInt, pctFormat, cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-import { Search, ChevronDown, ChevronRight, Building2, Users, AlertCircle, TrendingDown, Activity } from "lucide-react";
+import {
+  Search, ChevronDown, ChevronRight, Building2, Users,
+  AlertCircle, TrendingDown, Activity, X, MapPin, Filter,
+} from "lucide-react";
 
 export default function SchoolDrilldownSection({ schools = [] }: { schools: SchoolAnalytics[] }) {
   const { lang } = useLang();
   const [search, setSearch] = useState("");
+  const [selectedMandal, setSelectedMandal] = useState<string>("all");
   const [selected, setSelected] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(true);
 
+  // Unique mandal list
+  const mandals = useMemo(() => {
+    const names = Array.from(new Set(schools.map(s => s.mandalName).filter(Boolean)));
+    return names.sort();
+  }, [schools]);
+
   const filtered = useMemo(() => {
     const s = search.toLowerCase();
-    return schools.filter(sc => sc.schoolName.toLowerCase().includes(s));
-  }, [schools, search]);
+    return schools
+      .filter(sc => selectedMandal === "all" || sc.mandalName === selectedMandal)
+      .filter(sc => sc.schoolName.toLowerCase().includes(s));
+  }, [schools, search, selectedMandal]);
 
   const selectedSchool = useMemo(() =>
     schools.find(s => s.schoolId === selected),
@@ -40,72 +52,164 @@ export default function SchoolDrilldownSection({ schools = [] }: { schools: Scho
     ] : [],
   [selectedSchool, schools, lang]);
 
+  const clearSelection = () => { setSelected(null); setSearch(""); };
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
+
+        {/* ── Header row ─────────────────────────────────────────── */}
+        <div className="w-full flex items-center justify-between px-5 py-4">
+          {/* Left: expand/collapse toggle */}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+          >
             {expanded ? <ChevronDown className="h-4 w-4 text-zinc-400" /> : <ChevronRight className="h-4 w-4 text-zinc-400" />}
             <h3 className="text-sm font-bold text-zinc-700 uppercase tracking-wider">
               {lang === "en" ? "School Analytics" : "పాఠశాల విశ్లేషణలు"}
             </h3>
-          </div>
+          </button>
+
+          {/* Right: selected school pill with clear button */}
           {selectedSchool && (
-            <span className="text-xs font-bold text-[color:var(--ap-navy)] bg-blue-50 px-2 py-1 rounded-full max-w-[200px] truncate">
-              {selectedSchool.schoolName}
-            </span>
+            <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-full pl-2.5 pr-1 py-1 max-w-[260px]">
+              <Building2 className="h-3 w-3 shrink-0 text-blue-500" />
+              <span className="text-xs font-semibold truncate max-w-[160px]">{selectedSchool.schoolName}</span>
+              <button
+                onClick={clearSelection}
+                title={lang === "en" ? "Clear selection" : "సెలక్షన్ తొలగించు"}
+                className="flex items-center justify-center h-5 w-5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-500 hover:text-blue-700 transition-colors shrink-0 ml-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
-        </button>
+        </div>
 
         {expanded && (
           <div className="px-5 pb-5 space-y-4">
-            <div className="flex gap-3 items-center">
-              <div className="relative flex-1 max-w-xs">
+
+            {/* ── Filter bar ─────────────────────────────────────── */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[180px] max-w-xs">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder={lang === "en" ? "Search school..." : "పాఠశాల వెతకండి..."}
-                  className="w-full pl-7 pr-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                  className="w-full pl-7 pr-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
                 />
               </div>
-              {selected && (
-                <button onClick={() => { setSelected(null); setSearch(""); }} className="text-xs text-zinc-400 hover:text-zinc-600 font-medium">
-                  {lang === "en" ? "Clear" : "క్లియర్"}
-                </button>
-              )}
+
+              {/* Mandal filter */}
+              <div className="relative min-w-[160px]">
+                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
+                <select
+                  value={selectedMandal}
+                  onChange={e => setSelectedMandal(e.target.value)}
+                  className="w-full pl-7 pr-7 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white appearance-none cursor-pointer"
+                >
+                  <option value="all">{lang === "en" ? "All Mandals" : "అన్ని మండలాలు"}</option>
+                  {mandals.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
+              </div>
+
+              {/* Active filter badges + clear all */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedMandal !== "all" && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full pl-2.5 pr-1.5 py-0.5">
+                    <Filter className="h-2.5 w-2.5" />
+                    {selectedMandal}
+                    <button
+                      onClick={() => setSelectedMandal("all")}
+                      className="ml-0.5 hover:text-indigo-900"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                )}
+                {search && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-zinc-100 border border-zinc-200 text-zinc-600 rounded-full pl-2.5 pr-1.5 py-0.5">
+                    "{search}"
+                    <button onClick={() => setSearch("")} className="ml-0.5 hover:text-zinc-900">
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                )}
+                {(selectedMandal !== "all" || search || selected) && (
+                  <button
+                    onClick={() => { clearSelection(); setSelectedMandal("all"); }}
+                    className="text-[11px] text-zinc-400 hover:text-zinc-600 font-medium underline underline-offset-2"
+                  >
+                    {lang === "en" ? "Clear all" : "అన్నీ క్లియర్"}
+                  </button>
+                )}
+              </div>
+
+              {/* Results count */}
+              <span className="ml-auto text-[11px] text-zinc-400 font-medium">
+                {filtered.length} {lang === "en" ? "schools" : "పాఠశాలలు"}
+              </span>
             </div>
 
+            {/* ── School grid / detail view ───────────────────────── */}
             {!selected ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[350px] overflow-y-auto">
-                {filtered.sort((a, b) => b.pctFlagged - a.pctFlagged).map(s => (
-                  <button
-                    key={s.schoolId}
-                    onClick={() => setSelected(s.schoolId)}
-                    className={cn(
-                      "flex items-center justify-between p-2.5 rounded-lg border text-xs transition-all text-left hover:shadow-sm",
-                      s.pctFlagged > 0.2 ? "border-red-200 bg-red-50/50" :
-                      s.pctFlagged > 0.1 ? "border-amber-200 bg-amber-50/30" :
-                      "border-zinc-200 bg-white"
-                    )}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-zinc-800 truncate">{s.schoolName}</div>
-                      <div className="text-[10px] text-zinc-400">{s.mandalName} · {fmtInt(s.totalStudents)} students</div>
-                    </div>
-                    <div className="flex items-center gap-2 ml-2">
-                      <span className={cn("font-bold", s.pctFlagged > 0.2 ? "text-red-600" : s.pctFlagged > 0.1 ? "text-amber-600" : "text-emerald-600")}>
-                        {pctFormat(s.pctFlagged, 1)}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[350px] overflow-y-auto pr-1">
+                {filtered.length === 0 ? (
+                  <div className="col-span-3 text-center py-10 text-sm text-zinc-400">
+                    {lang === "en" ? "No schools found." : "పాఠశాలలు కనుగొనబడలేదు."}
+                  </div>
+                ) : (
+                  filtered.sort((a, b) => b.pctFlagged - a.pctFlagged).map(s => (
+                    <button
+                      key={s.schoolId}
+                      onClick={() => setSelected(s.schoolId)}
+                      className={cn(
+                        "flex items-center justify-between p-2.5 rounded-lg border text-xs transition-all text-left hover:shadow-sm group",
+                        s.pctFlagged > 0.2 ? "border-red-200 bg-red-50/50 hover:bg-red-50" :
+                        s.pctFlagged > 0.1 ? "border-amber-200 bg-amber-50/30 hover:bg-amber-50/60" :
+                        "border-zinc-200 bg-white hover:bg-zinc-50"
+                      )}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-zinc-800 truncate group-hover:text-blue-700 transition-colors">{s.schoolName}</div>
+                        <div className="text-[10px] text-zinc-400 mt-0.5 flex items-center gap-1">
+                          <MapPin className="h-2.5 w-2.5" />{s.mandalName} · {fmtInt(s.totalStudents)} {lang === "en" ? "students" : "విద్యార్థులు"}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-2 shrink-0">
+                        <span className={cn("font-bold text-sm", s.pctFlagged > 0.2 ? "text-red-600" : s.pctFlagged > 0.1 ? "text-amber-600" : "text-emerald-600")}>
+                          {pctFormat(s.pctFlagged, 1)}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             ) : selectedSchool ? (
               <div className="space-y-5">
+                {/* School detail header */}
+                <div className="flex items-start justify-between gap-3 p-3 rounded-lg bg-blue-50/60 border border-blue-100">
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-blue-900 truncate">{selectedSchool.schoolName}</div>
+                    <div className="text-[11px] text-blue-600 mt-0.5 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />{selectedSchool.mandalName}
+                    </div>
+                  </div>
+                  <button
+                    onClick={clearSelection}
+                    className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-900 bg-white border border-blue-200 hover:border-blue-400 rounded-full px-2.5 py-1 transition-colors shrink-0"
+                  >
+                    <X className="h-3 w-3" />
+                    {lang === "en" ? "Back to list" : "జాబితాకు తిరిగి"}
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { icon: <Building2 className="h-4 w-4" />, label: lang === "en" ? "School ID" : "పాఠశాల ID", value: `#${selectedSchool.schoolId}`, bg: "bg-blue-50", txt: "text-blue-700" },
