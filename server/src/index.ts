@@ -9,6 +9,7 @@ import mandalsRouter from "./routes/mandals";
 import districtsRouter from "./routes/districts";
 import metricsRouter from "./routes/metrics";
 import interventionsRouter from "./routes/interventions";
+import analyticsRouter from "./routes/analytics";
 import counsellorRouter from "./routes/counsellor";
 import webhooksRouter from "./routes/webhooks";
 import modelRouter from "./routes/model";
@@ -48,6 +49,7 @@ app.use("/api/webhooks", webhooksRouter);
 app.use("/api/model", modelRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/analytics", analyticsRouter);
 app.use("/api/upload", uploadRouter);
 
 app.get("/health", (_req, res) => {

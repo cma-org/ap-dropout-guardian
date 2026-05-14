@@ -2,6 +2,7 @@ import "server-only";
 import type {
   Metrics, Mandal, School, StudentDetail, RosterStudent, CounsellorTemplates, Teacher, Alert, AlertStats,
 } from "./types";
+import type { DistrictAnalytics } from "./analytics-types";
 
 // API_URL is required — the app does not fall back to local JSON files.
 const API_URL = process.env.API_URL;
@@ -109,6 +110,10 @@ export async function getModelChangelog(): Promise<unknown[] | null> {
   } catch {
     return null;
   }
+}
+
+export async function getDistrictAnalytics(districtName: string): Promise<DistrictAnalytics> {
+  return apiFetch<DistrictAnalytics>(`/api/analytics/district/${encodeURIComponent(districtName)}`);
 }
 
 export function pickCounsellorTemplate(
