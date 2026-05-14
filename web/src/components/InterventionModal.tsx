@@ -89,9 +89,8 @@ export default function InterventionModal({
     all.push(entry);
     saveInterventions(all);
 
-    // Best-effort sync to backend DB — non-blocking, won't fail the UI save
     try {
-      await fetch("/api/interventions", {
+      const res = await fetch("/api/interventions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -102,8 +101,11 @@ export default function InterventionModal({
           notes: notes || null,
         }),
       });
-    } catch {
-      // Backend unavailable — localStorage save is the source of truth for this session
+      if (!res.ok) {
+        console.error("Failed to persist intervention to DB:", await res.text());
+      }
+    } catch (err) {
+      console.error("Backend unreachable — intervention saved to localStorage only:", err);
     }
 
     setSaved(true);

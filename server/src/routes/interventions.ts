@@ -49,7 +49,7 @@ router.post("/", requireInternalOrAuth, async (req, res) => {
         status: status ?? "pending",
         assignedTo,
         notes: notes ?? null,
-        createdBy: req.user!.id,
+        createdBy: req.user && req.user.id > 0 ? req.user.id : null,
       },
     });
 
