@@ -9,21 +9,21 @@ router.get("/district/:districtName", async (req, res) => {
 
     const schools = await prisma.school.findMany({ where: { districtName } });
 
-    const studentAggr = await prisma.studentDetail.aggregate({
-      where: { districtName },
+    const studentAggr = await prisma.rosterStudent.aggregate({
+      where: { school: { districtName } },
       _count: { childSno: true },
       _avg: { attendanceRate: true, riskScore: true },
     });
 
-    const tierGroups = await prisma.studentDetail.groupBy({
+    const tierGroups = await prisma.rosterStudent.groupBy({
       by: ["tier"],
-      where: { districtName },
+      where: { school: { districtName } },
       _count: { childSno: true },
     });
 
-    const genderGroups = await prisma.studentDetail.groupBy({
+    const genderGroups = await prisma.rosterStudent.groupBy({
       by: ["genderLabel"],
-      where: { districtName },
+      where: { school: { districtName } },
       _count: { genderLabel: true },
       _avg: { riskScore: true },
     });
@@ -43,25 +43,25 @@ router.get("/district/:districtName", async (req, res) => {
       _count: { status: true },
     });
 
-    const incomeGroups = await prisma.studentDetail.groupBy({
+    const incomeGroups = await prisma.rosterStudent.groupBy({
       by: ["familyIncomeBracket"],
-      where: { districtName },
+      where: { school: { districtName } },
       _count: { childSno: true },
       _avg: { riskScore: true },
     });
 
     const buckets = [
-      { gte: 0, lt: 50, label: "<50%" },
-      { gte: 50, lt: 75, label: "50-75%" },
-      { gte: 75, lt: 90, label: "75-90%" },
-      { gte: 90, lt: 101, label: "≥90%" },
+      { gte: 0, lt: 0.5, label: "<50%" },
+      { gte: 0.5, lt: 0.75, label: "50-75%" },
+      { gte: 0.75, lt: 0.9, label: "75-90%" },
+      { gte: 0.9, lt: 1.1, label: "≥90%" },
     ];
     const attendanceAggs = [];
     for (const b of buckets) {
       const [total, atRisk] = await Promise.all([
-        prisma.studentDetail.count({ where: { districtName, attendanceRate: { gte: b.gte, lt: b.lt } } }),
-        prisma.studentDetail.count({
-          where: { districtName, attendanceRate: { gte: b.gte, lt: b.lt }, tier: { in: ["Critical", "High"] } },
+        prisma.rosterStudent.count({ where: { school: { districtName }, attendanceRate: { gte: b.gte, lt: b.lt } } }),
+        prisma.rosterStudent.count({
+          where: { school: { districtName }, attendanceRate: { gte: b.gte, lt: b.lt }, tier: { in: ["Critical", "High"] } },
         }),
       ]);
       attendanceAggs.push({ ...b, total, atRisk });
@@ -79,39 +79,55 @@ router.get("/district/:districtName", async (req, res) => {
       gradeAggs.push({ grade, total: rosterStudents.length, flagged, rate: flagged / rosterStudents.length });
     }
 
-    const allStudents = await prisma.studentDetail.findMany({
-      where: { districtName },
+    const allStudents = (await prisma.rosterStudent.findMany({
+      where: { school: { districtName } },
       select: {
         childSno: true, attendanceRate: true, riskScore: true,
-        tier: true, genderLabel: true, schoolId: true, mandalName: true,
+        tier: true, genderLabel: true, schoolId: true,
+        school: { select: { mandalName: true } }
       },
-    });
+    })).map(s => ({
+      ...s,
+      mandalName: s.school?.mandalName ?? "Unknown"
+    }));
 
-    const totalStudents = studentAggr._count?.childSno ?? 0;
+    const totalStudents = schools.reduce((s, sch) => s + sch.nStudents, 0);
     const totalFlagged = schools.reduce((s, sch) => s + sch.nFlagged, 0);
     const totalSchools = schools.length;
 
+    const nCritical = Math.round(schools.reduce((s, sch) => s + (sch.nStudents * (sch.pctCritical || 0) / 100), 0));
+    const nHigh = totalFlagged - nCritical;
+    const nOther = totalStudents - totalFlagged;
+
+    // Use roster for Medium vs Low split if available
+    const mediumInRoster = (tierGroups as any[]).find((t: any) => t.tier === "Medium")?._count?.childSno ?? 0;
+    const lowInRoster = (tierGroups as any[]).find((t: any) => t.tier === "Low")?._count?.childSno ?? 0;
+    const otherInRoster = mediumInRoster + lowInRoster;
+    
+    const nMedium = otherInRoster > 0 ? Math.round(nOther * (mediumInRoster / otherInRoster)) : Math.round(nOther * 0.15); 
+    const nLow = nOther - nMedium;
+
+    const tierDistribution = [
+      { tier: "Critical", count: nCritical },
+      { tier: "High", count: nHigh },
+      { tier: "Medium", count: nMedium },
+      { tier: "Low", count: nLow },
+    ];
+
     const genderDistribution = (genderGroups as any[]).map(g => ({
       label: g.genderLabel as string,
-      count: g._count?.genderLabel as number ?? 0,
+      value: g._count?.genderLabel as number ?? 0,
       avgRisk: (g._avg?.riskScore as number) ?? 0,
     }));
 
     const genderFlagged = await Promise.all(
       genderDistribution.map(async (g) => {
-        const flagged = await prisma.studentDetail.count({
-          where: { districtName, genderLabel: g.label, tier: { in: ["Critical", "High"] } },
+        const flagged = await prisma.rosterStudent.count({
+          where: { school: { districtName }, genderLabel: g.label, tier: { in: ["Critical", "High"] } },
         });
         return { ...g, flagged };
       })
     );
-
-    const tierDistribution = [
-      { tier: "Critical", count: (tierGroups as any[]).find((t: any) => t.tier === "Critical")?._count?.childSno ?? 0 },
-      { tier: "High", count: (tierGroups as any[]).find((t: any) => t.tier === "High")?._count?.childSno ?? 0 },
-      { tier: "Medium", count: (tierGroups as any[]).find((t: any) => t.tier === "Medium")?._count?.childSno ?? 0 },
-      { tier: "Low", count: (tierGroups as any[]).find((t: any) => t.tier === "Low")?._count?.childSno ?? 0 },
-    ];
 
     const topDrivers = (driverGroups as any[]).map(d => ({
       feature: d.feature as string,
@@ -227,7 +243,7 @@ router.get("/district/:districtName", async (req, res) => {
         totalStudents,
         totalFlagged,
         atRiskPercent: totalStudents > 0 ? totalFlagged / totalStudents : 0,
-        avgRisk: schools.length > 0 ? schools.reduce((s, sch) => s + sch.avgRisk, 0) / schools.length : 0,
+        avgRisk: studentAggr._avg?.riskScore ?? 0,
         avgAttendance: studentAggr._avg?.attendanceRate ?? 0,
         criticalSchools: schools.filter(s => s.pctCritical > 0.05).length,
         highRiskSchools: schools.filter(s => s.avgRisk > 0.1).length,
