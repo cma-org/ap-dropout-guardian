@@ -35,7 +35,7 @@ import {
 } from "recharts";
 import type { StudentDetail, CounsellorTemplate } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
-import InterventionModal, { getInterventionsForStudent, isInterventionLogged } from "@/components/InterventionModal";
+import InterventionModal from "@/components/InterventionModal";
 import ParentEngagementCard from "@/components/ParentEngagementCard";
 import LEAPApiPanel from "@/components/LEAPApiPanel";
 import { useLang, T } from "@/lib/i18n";
@@ -382,9 +382,15 @@ export default function StudentDetailClient({
   const [showModal, setShowModal] = useState(false);
   const [interventionCount, setInterventionCount] = useState(0);
 
-  const refreshState = () => {
-    setLogged(isInterventionLogged(student.child_sno));
-    setInterventionCount(getInterventionsForStudent(student.child_sno).length);
+  const refreshState = async () => {
+    try {
+      const res = await fetch(`/api/interventions?childSno=${student.child_sno}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogged(data.length > 0);
+        setInterventionCount(data.length);
+      }
+    } catch { /* ignore */ }
   };
 
   useEffect(() => { refreshState(); }, [student.child_sno]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
-import { requireAuth } from "../middleware/auth";
 import { requireInternalOrAuth } from "../middleware/internalAuth";
 
 const router = Router();
@@ -26,6 +25,44 @@ router.get("/", requireInternalOrAuth, async (req, res) => {
   }
 });
 
+async function ensureStudentDetail(childSno: number) {
+  const existing = await prisma.studentDetail.findUnique({ where: { childSno } });
+  if (existing) return existing;
+
+  const roster = await prisma.rosterStudent.findFirst({
+    where: { childSno },
+    include: { school: true },
+  });
+  if (!roster) throw new Error(`Student ${childSno} not found in either StudentDetail or RosterStudent`);
+
+  const genderMap: Record<string, number> = { Male: 1, Female: 2, male: 1, female: 2 };
+  const gender = genderMap[roster.genderLabel] ?? 0;
+
+  return prisma.studentDetail.create({
+    data: {
+      childSno,
+      schoolId: roster.schoolId,
+      schoolName: roster.school.schoolName,
+      districtName: roster.school.districtName,
+      mandalName: roster.school.mandalName,
+      gender,
+      genderLabel: roster.genderLabel,
+      casteClean: roster.casteClean ?? 1,
+      age: null,
+      attendanceRate: roster.attendanceRate,
+      maxConsecAbsence: 0,
+      faAvg: roster.faAvg,
+      saAvg: null,
+      migrationFlag: roster.migrationFlag ?? 0,
+      parentLiteracy: 0,
+      familyIncomeBracket: roster.familyIncomeBracket ?? 0,
+      transportAllowance: 0,
+      riskScore: roster.riskScore,
+      tier: roster.tier,
+    },
+  });
+}
+
 // POST /api/interventions
 router.post("/", requireInternalOrAuth, async (req, res) => {
   try {
@@ -42,6 +79,8 @@ router.post("/", requireInternalOrAuth, async (req, res) => {
       return;
     }
 
+    await ensureStudentDetail(childSno);
+
     const intervention = await prisma.intervention.create({
       data: {
         childSno,
@@ -55,17 +94,19 @@ router.post("/", requireInternalOrAuth, async (req, res) => {
 
     res.status(201).json(intervention);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("POST /api/interventions error:", err);
+    res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
   }
 });
 
 // PUT /api/interventions/:id
-router.put("/:id", requireAuth, async (req, res) => {
+router.put("/:id", requireInternalOrAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id as string, 10);
-    const { status, notes, completedAt } = req.body as {
+    const { actionType, status, assignedTo, notes, completedAt } = req.body as {
+      actionType?: string;
       status?: string;
+      assignedTo?: string;
       notes?: string;
       completedAt?: string;
     };
@@ -79,7 +120,9 @@ router.put("/:id", requireAuth, async (req, res) => {
     const updated = await prisma.intervention.update({
       where: { id },
       data: {
+        ...(actionType !== undefined && { actionType }),
         ...(status && { status }),
+        ...(assignedTo !== undefined && { assignedTo }),
         ...(notes !== undefined && { notes }),
         ...(completedAt && { completedAt: new Date(completedAt) }),
       },
@@ -93,7 +136,7 @@ router.put("/:id", requireAuth, async (req, res) => {
 });
 
 // DELETE /api/interventions/:id
-router.delete("/:id", requireAuth, async (req, res) => {
+router.delete("/:id", requireInternalOrAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id as string, 10);
     await prisma.intervention.delete({ where: { id } });

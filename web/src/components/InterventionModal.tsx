@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, X, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLang, T } from "@/lib/i18n";
@@ -7,6 +7,7 @@ import { useLang, T } from "@/lib/i18n";
 export type InterventionStatus = "pending" | "in_progress" | "completed";
 
 export interface Intervention {
+  id?: number;
   child_sno: number;
   action_type: string;
   status: InterventionStatus;
@@ -39,22 +40,17 @@ const STATUS_COLORS: Record<InterventionStatus, string> = {
   completed: "bg-emerald-100 text-emerald-800 border-emerald-300",
 };
 
-function loadInterventions(): Intervention[] {
-  try {
-    return JSON.parse(localStorage.getItem("interventions") ?? "[]");
-  } catch { return []; }
-}
-
-function saveInterventions(list: Intervention[]) {
-  localStorage.setItem("interventions", JSON.stringify(list));
-}
-
-export function getInterventionsForStudent(child_sno: number): Intervention[] {
-  return loadInterventions().filter((i) => i.child_sno === child_sno);
-}
-
-export function isInterventionLogged(child_sno: number): boolean {
-  return loadInterventions().some((i) => i.child_sno === child_sno);
+function mapFromServer(s: any): Intervention {
+  return {
+    id: s.id,
+    child_sno: s.childSno,
+    action_type: s.actionType,
+    status: s.status,
+    assigned_to: s.assignedTo,
+    notes: s.notes ?? "",
+    at: s.createdAt,
+    completed_at: s.completedAt ?? undefined,
+  };
 }
 
 export default function InterventionModal({
@@ -67,7 +63,14 @@ export default function InterventionModal({
   onSaved: () => void;
 }) {
   const { lang } = useLang();
-  const existing = getInterventionsForStudent(child_sno);
+  const [interventions, setInterventions] = useState<Intervention[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/interventions?childSno=${child_sno}`)
+      .then(res => res.json())
+      .then(data => setInterventions(data.map(mapFromServer)))
+      .catch(err => console.error("Failed to load interventions:", err));
+  }, [child_sno]);
 
   const [actionType, setActionType] = useState(ACTION_TYPES[0]);
   const [status, setStatus] = useState<InterventionStatus>("pending");
@@ -76,18 +79,7 @@ export default function InterventionModal({
   const [saved, setSaved] = useState(false);
 
   const handleSave = async () => {
-    const all = loadInterventions();
-    const entry: Intervention = {
-      child_sno,
-      action_type: actionType,
-      status,
-      assigned_to: assignedTo,
-      notes,
-      at: new Date().toISOString(),
-      ...(status === "completed" ? { completed_at: new Date().toISOString() } : {}),
-    };
-    all.push(entry);
-    saveInterventions(all);
+    if (!assignedTo) return;
 
     try {
       const res = await fetch("/api/interventions", {
@@ -101,28 +93,42 @@ export default function InterventionModal({
           notes: notes || null,
         }),
       });
-      if (!res.ok) {
+      if (res.ok) {
+        const created = await res.json();
+        setInterventions(prev => [...prev, mapFromServer(created)]);
+        setSaved(true);
+        setTimeout(() => { onSaved(); onClose(); }, 800);
+      } else {
         console.error("Failed to persist intervention to DB:", await res.text());
       }
     } catch (err) {
-      console.error("Backend unreachable — intervention saved to localStorage only:", err);
+      console.error("Backend unreachable:", err);
     }
-
-    setSaved(true);
-    setTimeout(() => { onSaved(); onClose(); }, 800);
   };
 
-  const updateStatus = (index: number, newStatus: InterventionStatus) => {
-    const all = loadInterventions();
-    const target = all.filter((i) => i.child_sno === child_sno)[index];
-    if (!target) return;
-    const globalIdx = all.indexOf(target);
-    all[globalIdx] = {
-      ...all[globalIdx],
-      status: newStatus,
-      ...(newStatus === "completed" ? { completed_at: new Date().toISOString() } : {}),
-    };
-    saveInterventions(all);
+  const updateStatus = async (index: number, newStatus: InterventionStatus) => {
+    const target = interventions[index];
+    if (!target?.id) return;
+
+    try {
+      const res = await fetch(`/api/interventions/${target.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          ...(newStatus === "completed" ? { completedAt: new Date().toISOString() } : {}),
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setInterventions(prev => prev.map((iv, i) =>
+          i === index ? mapFromServer(updated) : iv
+        ));
+        onSaved();
+      }
+    } catch (err) {
+      console.error("Failed to sync status update to DB:", err);
+    }
   };
 
   return (
@@ -140,10 +146,10 @@ export default function InterventionModal({
         </div>
 
         {/* Existing interventions */}
-        {existing.length > 0 && (
+        {interventions.length > 0 && (
           <div className="px-6 py-4 border-b border-zinc-100 space-y-2">
             <div className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">{T.interventions.prevIv[lang]}</div>
-            {existing.map((iv, i) => (
+            {interventions.map((iv, i) => (
               <div key={i} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-zinc-800">
@@ -153,7 +159,7 @@ export default function InterventionModal({
                   <div className="text-[10px] text-zinc-400 mt-1">{new Date(iv.at).toLocaleString(lang === "en" ? "en-US" : "te-IN")}</div>
                 </div>
                 <select
-                  defaultValue={iv.status}
+                  value={iv.status}
                   onChange={(e) => updateStatus(i, e.target.value as InterventionStatus)}
                   className={cn("text-xs rounded border px-2 py-1 font-medium shrink-0", STATUS_COLORS[iv.status])}
                 >
