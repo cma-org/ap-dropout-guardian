@@ -21,11 +21,26 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-white border border-zinc-200 rounded-lg shadow-lg px-3 py-2 text-xs">
       <p className="font-bold text-zinc-700 mb-1">{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }} className="font-medium">
-          {p.name}: {typeof p.value === "number" && p.value > 100 ? fmtInt(p.value) : p.value}
-        </p>
-      ))}
+      {payload.map((p: any) => {
+        const isRate = p.name?.toLowerCase().includes("rate") || p.name?.toLowerCase().includes("contrib") || p.dataKey?.toLowerCase().includes("rate");
+        let displayValue = p.value;
+        
+        if (typeof p.value === "number") {
+          if (isRate) {
+            // If it's a rate and less than 1, it's likely a ratio. If > 1, it's likely already a percentage.
+            const val = p.value < 1.1 ? p.value * 100 : p.value;
+            displayValue = `${val.toFixed(1)}%`;
+          } else if (p.value > 100) {
+            displayValue = fmtInt(p.value);
+          }
+        }
+
+        return (
+          <p key={p.name} style={{ color: p.color }} className="font-medium">
+            {p.name}: {displayValue}
+          </p>
+        );
+      })}
     </div>
   );
 }

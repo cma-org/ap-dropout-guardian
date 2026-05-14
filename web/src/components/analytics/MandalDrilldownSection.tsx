@@ -7,7 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
-import { Search, ChevronDown, ChevronRight, Building2, Users, AlertCircle, TrendingDown, ArrowUpRight } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, Building2, Users, AlertCircle, TrendingDown, ArrowUpRight, X } from "lucide-react";
 
 const PIECHART_COLORS = ["#3b82f6", "#6366f1", "#8b5cf6", "#a855f7"];
 
@@ -59,9 +59,14 @@ export default function MandalDrilldownSection({
             </h3>
           </div>
           {selectedMandal && (
-            <span className="text-xs font-bold text-[color:var(--ap-navy)] bg-blue-50 px-2 py-1 rounded-full">
+            <div 
+              onClick={(e) => { e.stopPropagation(); setSelected(null); setSearch(""); }}
+              className="group flex items-center gap-1.5 text-[10px] font-bold text-[color:var(--ap-navy)] bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-full transition-colors cursor-pointer"
+              title={lang === "en" ? "Clear selection" : "ఎంపికను క్లియర్ చేయండి"}
+            >
               {selectedMandal.name}
-            </span>
+              <X className="h-3 w-3 text-blue-400 group-hover:text-blue-600" />
+            </div>
           )}
         </button>
 
@@ -78,8 +83,12 @@ export default function MandalDrilldownSection({
                 />
               </div>
               {selected && (
-                <button onClick={() => { setSelected(null); setSearch(""); }} className="text-xs text-zinc-400 hover:text-zinc-600 font-medium">
-                  {lang === "en" ? "Clear" : "క్లియర్"}
+                <button 
+                  onClick={() => { setSelected(null); setSearch(""); }} 
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-600 hover:text-zinc-900 rounded-lg font-bold transition-all border border-zinc-200"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  {lang === "en" ? "Clear Filter" : "ఫిల్టర్ క్లియర్"}
                 </button>
               )}
             </div>

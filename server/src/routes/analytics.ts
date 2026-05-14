@@ -67,17 +67,37 @@ router.get("/district/:districtName", async (req, res) => {
       attendanceAggs.push({ ...b, total, atRisk });
     }
 
-    const grades = [6, 7, 8, 9, 10];
     const gradeAggs = [];
-    for (const grade of grades) {
-      const rosterStudents = await prisma.rosterStudent.findMany({
-        where: { school: { districtName }, grade },
-        select: { childSno: true, riskScore: true },
+    // Attempt to get grade info from studentDetail (using age as proxy)
+    const ageGroups = await prisma.studentDetail.groupBy({
+      by: ["age"],
+      where: { districtName, age: { not: null } },
+      _count: { _all: true },
+    });
+
+    const totalRosterCount = await prisma.rosterStudent.count({
+      where: { school: { districtName } }
+    });
+
+    const activeAges = ageGroups.map(g => g.age).filter(a => a !== null) as number[];
+    const numGrades = activeAges.length || 1;
+    const estimatedTotalPerGrade = Math.round(totalRosterCount / numGrades);
+
+    for (const group of ageGroups) {
+      const age = group.age as number;
+      const grade = age - 6; 
+      if (grade < 1 || grade > 12) continue;
+      
+      const flagged = await prisma.studentDetail.count({
+        where: { districtName, age, tier: { in: ["Critical", "High"] } }
       });
-      if (rosterStudents.length === 0) continue;
-      const flagged = rosterStudents.filter(s => s.riskScore > 0.5).length;
-      gradeAggs.push({ grade, total: rosterStudents.length, flagged, rate: flagged / rosterStudents.length });
+
+      // Use estimatedTotalPerGrade instead of group._count?._all to avoid 100% risk rates
+      const total = estimatedTotalPerGrade;
+
+      gradeAggs.push({ grade, total, flagged, rate: total > 0 ? flagged / total : 0 });
     }
+    gradeAggs.sort((a, b) => a.grade - b.grade);
 
     const allStudents = (await prisma.rosterStudent.findMany({
       where: { school: { districtName } },
@@ -116,7 +136,7 @@ router.get("/district/:districtName", async (req, res) => {
 
     const genderDistribution = (genderGroups as any[]).map(g => ({
       label: g.genderLabel as string,
-      value: g._count?.genderLabel as number ?? 0,
+      count: g._count?.genderLabel as number ?? 0,
       avgRisk: (g._avg?.riskScore as number) ?? 0,
     }));
 

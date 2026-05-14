@@ -16,11 +16,25 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-white border border-zinc-200 rounded-lg shadow-lg px-3 py-2 text-xs max-w-[200px]">
       <p className="font-bold text-zinc-700 mb-1">{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }} className="font-medium">
-          {p.name}: {typeof p.value === "number" ? (p.value > 10 ? p.value.toFixed(1) : p.value) : p.value}%
-        </p>
-      ))}
+      {payload.map((p: any) => {
+        const isRate = p.name?.toLowerCase().includes("rate") || p.dataKey?.toLowerCase().includes("rate");
+        let displayValue = p.value;
+        
+        if (typeof p.value === "number") {
+          if (isRate) {
+            // Values in this chart are already mapped to 0-100 in topMandals memo
+            displayValue = `${p.value.toFixed(1)}%`;
+          } else if (p.value > 100) {
+            displayValue = fmtInt(p.value);
+          }
+        }
+
+        return (
+          <p key={p.name} style={{ color: p.color }} className="font-medium">
+            {p.name}: {displayValue}
+          </p>
+        );
+      })}
     </div>
   );
 }
@@ -38,7 +52,10 @@ export default function MandalComparisonPanel({ mandals = [] }: { mandals: Manda
     [...filtered].sort((a, b) => b.flagRate - a.flagRate),
   [filtered]);
 
-  const topMandals = useMemo(() => sortedByFlag.slice(0, 10), [sortedByFlag]);
+  const topMandals = useMemo(() => sortedByFlag.slice(0, 10).map(m => ({
+    ...m,
+    flagRate: m.flagRate * 100
+  })), [sortedByFlag]);
 
   const metrics = useMemo(() => {
     const highRisk = mandals.filter(m => m.flagRate > 0.15);
