@@ -135,9 +135,9 @@ export default function AdvancedInsightsSection({ data }: { data: DistrictAnalyt
       </div>
 
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-        <button
+        <div
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50/50 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50/50 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2">
             {expanded ? <ChevronDown className="h-4 w-4 text-zinc-400" /> : <ChevronRight className="h-4 w-4 text-zinc-400" />}
@@ -149,7 +149,7 @@ export default function AdvancedInsightsSection({ data }: { data: DistrictAnalyt
             {(["monthly", "quarterly", "yearly"] as const).map(t => (
               <button
                 key={t}
-                onClick={() => setTimeFilter(t)}
+                onClick={(e) => { e.stopPropagation(); setTimeFilter(t); }}
                 className={cn("px-2 py-1 text-[10px] font-bold rounded-md transition-all",
                   timeFilter === t ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500"
                 )}
@@ -160,7 +160,7 @@ export default function AdvancedInsightsSection({ data }: { data: DistrictAnalyt
               </button>
             ))}
           </div>
-        </button>
+        </div>
 
         {expanded && (
           <div className="px-5 pb-5 space-y-5">

@@ -206,15 +206,20 @@ router.get("/district/:districtName", async (req, res) => {
     })).sort((a, b) => b.rate - a.rate);
 
     const trendMonths = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
-    const trends = trendMonths.map((month, i) => {
-      const seed = (totalFlagged * 31 + i * 17) % 1000;
-      const ratio = 0.6 + i * 0.04 + seed / 10000;
-      return {
-        month,
-        flagged: Math.round(totalFlagged * Math.min(ratio, 1)),
-        interventions: Math.round(totalFlagged * Math.min(ratio, 1) * 0.35),
-      };
+    const allInterventions = await prisma.intervention.findMany({
+      where: { student: { districtName } },
+      select: { createdAt: true },
     });
+    const interventionsPerMonth: Record<string, number> = {};
+    for (const iv of allInterventions) {
+      const m = iv.createdAt.toLocaleString("en-US", { month: "short" });
+      interventionsPerMonth[m] = (interventionsPerMonth[m] ?? 0) + 1;
+    }
+    const trends = trendMonths.map((month) => ({
+      month,
+      flagged: totalFlagged,
+      interventions: interventionsPerMonth[month] ?? 0,
+    }));
 
     res.json({
       overview: {
