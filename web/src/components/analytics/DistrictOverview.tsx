@@ -24,7 +24,7 @@ function CustomTooltip({ active, payload, label }: any) {
       {payload.map((p: any) => {
         const isRate = p.name?.toLowerCase().includes("rate") || p.name?.toLowerCase().includes("contrib") || p.dataKey?.toLowerCase().includes("rate");
         let displayValue = p.value;
-        
+
         if (typeof p.value === "number") {
           if (isRate) {
             // If it's a rate and less than 1, it's likely a ratio. If > 1, it's likely already a percentage.
@@ -120,8 +120,8 @@ export default function DistrictOverview({ data }: { data: DistrictAnalytics }) 
               <AreaChart data={d.trends}>
                 <defs>
                   <linearGradient id="olFlagged" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.12}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.12} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -250,9 +250,8 @@ export default function DistrictOverview({ data }: { data: DistrictAnalytics }) 
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} tickFormatter={v => fmtInt(v)} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="total" name="Total Students" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={40} />
+                <Bar dataKey="total" name="Total Students" fill="#6aa3eeff" radius={[4, 4, 0, 0]} barSize={40} />
                 <Bar dataKey="flagged" name="At Risk" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} />
-                <Bar dataKey="rate" name="Risk Rate" fill="#f97316" radius={[4, 4, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -281,7 +280,7 @@ export default function DistrictOverview({ data }: { data: DistrictAnalytics }) 
                 <XAxis dataKey="grade" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} tickFormatter={v => fmtInt(v)} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="total" name="Total Students" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={30} />
+                <Bar dataKey="total" name="Total Students" fill="#6aa3eeff" radius={[4, 4, 0, 0]} barSize={30} />
                 <Bar dataKey="flagged" name="At Risk" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={30} />
               </BarChart>
             </ResponsiveContainer>
@@ -312,7 +311,7 @@ export default function DistrictOverview({ data }: { data: DistrictAnalytics }) 
                 <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#64748b", fontWeight: 600 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} tickFormatter={v => fmtInt(v)} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="total" name="Total Students" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={36} stackId="a" />
+                <Bar dataKey="total" name="Total Students" fill="#6aa3eeff" radius={[4, 4, 0, 0]} barSize={36} stackId="a" />
                 <Bar dataKey="atRisk" name="At Risk" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={36} stackId="a" />
               </BarChart>
             </ResponsiveContainer>
