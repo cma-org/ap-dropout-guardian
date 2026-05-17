@@ -28,3 +28,5 @@ web/public/data/
 .env.local
 features.md
 feature_checklist.md
+
+.opencode

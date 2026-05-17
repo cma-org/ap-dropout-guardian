@@ -10,6 +10,7 @@ import {
 import { useLang, T } from "@/lib/i18n";
 import { fmtInt, pctFormat } from "@/lib/utils";
 import InfoTooltip from "./InfoTooltip";
+import RoleShowcase from "./RoleShowcase";
 import {
   LineChart as RechartsLineChart, Line, ResponsiveContainer
 } from "recharts";
@@ -287,6 +288,9 @@ export default function LandingClient({ recall, precision, criticalCount }: Prop
           </div>
         </div>
       </section>
+
+      {/* 2b. ROLE SHOWCASE — scroll-based interactive experience */}
+      <RoleShowcase />
 
       {/* 3. KEY FEATURES */}
       <section className="max-w-[1400px] mx-auto px-6 py-24">

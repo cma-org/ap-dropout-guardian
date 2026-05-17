@@ -434,6 +434,59 @@ export const T = {
     feat5Title: { en: "Evidence-Based Interventions", te: "ఆధారిత ఆధారిత జోక్యాలు" },
     feat5Desc: { en: "Guided interventions to support at-risk students effectively with tracked outcomes.", te: "ట్రాక్ చేయబడిన ఫలితాలతో ప్రమాదంలో ఉన్న విద్యార్థులకు సమర్థవంతంగా మద్దతు ఇవ్వడానికి మార్గదర్శక జోక్యాలు." },
 
+    roleTitle: {
+      en: "For Every Role in Education",
+      te: "విద్యలో ప్రతి పాత్రకు",
+    },
+    roleSubtitle: {
+      en: "Role-specific dashboards tailored to each stakeholder's needs — from classroom to state level.",
+      te: "తరగతి నుండి రాష్ట్ర స్థాయి వరకు — ప్రతి వాటాదారు అవసరాలకు అనుగుణమైన డ్యాష్‌బోర్డ్‌లు.",
+    },
+    role1Title: { en: "Teacher", te: "ఉపాధ్యాయుడు" },
+    role1Sub: { en: "Classroom-Level Intervention", te: "తరగతి-స్థాయి జోక్యం" },
+    role1Resp: {
+      en: "Monitor daily attendance, identify at-risk students through SHAP-driven insights, and log interventions with counsellor assist tools.",
+      te: "రోజువారీ హాజరును పర్యవేక్షించండి, SHAP అంతర్దృష్టులతో ప్రమాదంలో ఉన్న విద్యార్థులను గుర్తించండి, కౌన్సిలర్ సాధనాలతో జోక్యాలను నమోదు చేయండి.",
+    },
+    role1Workflow: { en: "Roster → Review SHAP Drivers → Log Intervention → Track Outcome", te: "రోస్టర్ → SHAP విశ్లేషణ → జోక్యం నమోదు → ఫలితం ట్రాక్" },
+    role1Features: {
+      en: ["Risk-Tiered Roster", "SHAP Driver Explanations", "Counsellor Toolkit", "PDF Export", "Data Upload"],
+      te: ["రిస్క్-టైర్డ్ రోస్టర్", "SHAP డ్రైవర్ వివరణలు", "కౌన్సిలర్ టూల్‌కిట్", "PDF ఎగుమతి", "డేటా అప్‌లోడ్"],
+    },
+    role2Title: { en: "Head Master", te: "ప్రధానోపాధ్యాయుడు" },
+    role2Sub: { en: "School-Wide Oversight", te: "పాఠశాల-స్థాయి పర్యవేక్షణ" },
+    role2Resp: {
+      en: "Monitor school-level risk distribution, manage teacher interventions, and review escalated alerts across your school.",
+      te: "పాఠశాల-స్థాయి ప్రమాద పంపిణీని పర్యవేక్షించండి, ఉపాధ్యాయ జోక్యాలను నిర్వహించండి, ఎస్కలేటెడ్ అలర్ట్‌లను సమీక్షించండి.",
+    },
+    role2Workflow: { en: "School Dashboard → Tier Breakdown → Teacher Oversight → Track Interventions", te: "పాఠశాల డ్యాష్‌బోర్డ్ → శ్రేణి విశ్లేషణ → ఉపాధ్యాయ పర్యవేక్షణ → జోక్యాల ట్రాకింగ్" },
+    role2Features: {
+      en: ["Risk Overview Dashboard", "Tier Distribution Chart", "Teacher Roster", "Escalated Alert Review", "School Analytics"],
+      te: ["ప్రమాద అవలోకన డ్యాష్‌బోర్డ్", "శ్రేణి పంపిణీ చార్ట్", "ఉపాధ్యాయ జాబితా", "ఎస్కలేటెడ్ అలర్ట్ సమీక్ష", "పాఠశాల విశ్లేషణలు"],
+    },
+    role3Title: { en: "District Officer", te: "జిల్లా అధికారి" },
+    role3Sub: { en: "Multi-School Analytics", te: "బహు-పాఠశాల విశ్లేషణ" },
+    role3Resp: {
+      en: "Compare schools across your district, identify dropout hotspots via heatmap, and plan targeted interventions using data correlations.",
+      te: "మీ జిల్లా అంతటా పాఠశాలలను పోల్చండి, హీట్‌మ్యాప్ ద్వారా డ్రాపౌట్ హాట్‌స్పాట్‌లను గుర్తించండి, డేటా సహసంబంధాలతో లక్ష్య జోక్యాలను ప్లాన్ చేయండి.",
+    },
+    role3Workflow: { en: "District KPIs → Heatmap → Mandal Drill-Down → Correlation Reports", te: "జిల్లా KPIలు → హీట్‌మ్యాప్ → మండల వివరాలు → సహసంబంధ నివేదికలు" },
+    role3Features: {
+      en: ["KPI Dashboard", "Interactive Risk Heatmap", "Mandal Comparison", "Income/Attendance Correlations", "Gender Equity Analysis"],
+      te: ["KPI డ్యాష్‌బోర్డ్", "ఇంటరాక్టివ్ రిస్క్ హీట్‌మ్యాప్", "మండల పోలిక", "ఆదాయ/హాజరు సహసంబంధాలు", "లింగ సమానత్వ విశ్లేషణ"],
+    },
+    role4Title: { en: "Education Department", te: "విద్యా శాఖ" },
+    role4Sub: { en: "State-Wide Command Centre", te: "రాష్ట్ర-స్థాయి కంట్రోల్ సెంటర్" },
+    role4Resp: {
+      en: "Monitor all 26 districts, compare performance, oversee LEAP integration, and drive state-level policy decisions with data.",
+      te: "26 జిల్లాలను పర్యవేక్షించండి, పనితీరును పోల్చండి, LEAP ఇంటిగ్రేషన్‌ను పర్యవేక్షించండి, డేటాతో రాష్ట్ర-స్థాయి విధాన నిర్ణయాలు తీసుకోండి.",
+    },
+    role4Workflow: { en: "State Dashboard → District Comparison → LEAP Integration → Pipeline Oversight → Reports", te: "రాష్ట్ర డ్యాష్‌బోర్డ్ → జిల్లా పోలిక → LEAP ఇంటిగ్రేషన్ → పైప్‌లైన్ పర్యవేక్షణ → నివేదికలు" },
+    role4Features: {
+      en: ["State-Wide KPIs", "District Comparison Charts", "LEAP Integration Status", "Closed-Loop Pipeline", "CSV Export"],
+      te: ["రాష్ట్ర-స్థాయి KPIలు", "జిల్లా పోలిక చార్ట్‌లు", "LEAP ఇంటిగ్రేషన్ స్థితి", "క్లోజ్డ్-లూప్ పైప్‌లైన్", "CSV ఎగుమతి"],
+    },
+
     dataSourcesTitle: { en: "Built on Trusted Data Sources", te: "విశ్వసనీయ డేటా వనరులపై నిర్మించబడింది" },
     ds1Title: { en: "Attendance & Exam Performance", te: "హాజరు & పరీక్ష పనితీరు" },
     ds1Sub: { en: "School Education Department", te: "పాఠశాల విద్యా శాఖ" },

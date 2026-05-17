@@ -51,7 +51,6 @@ export default function StudentsListPage() {
   const [search, setSearch] = useState("");
   const [genderFilter, setGenderFilter] = useState<string>("All");
   const [tierFilter, setTierFilter] = useState<string>("All");
-  const [gradeFilter, setGradeFilter] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const pageSize = 15;
@@ -77,9 +76,8 @@ export default function StudentsListPage() {
       (genderFilter === "Male" && s.gender_label === "Male") ||
       (genderFilter === "Female" && s.gender_label === "Female");
     const matchesTier = tierFilter === "All" || s.tier === tierFilter;
-    const matchesGrade = gradeFilter === "All" || String(s.grade) === gradeFilter;
     const matchesTeacherGrade = user?.role === "teacher" && user.grade ? s.grade === user.grade : true;
-    return matchesSearch && matchesGender && matchesTier && matchesGrade && matchesTeacherGrade;
+    return matchesSearch && matchesGender && matchesTier && matchesTeacherGrade;
   });
 
   const totalPages = Math.ceil(filtered.length / pageSize);
@@ -87,7 +85,7 @@ export default function StudentsListPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, genderFilter, tierFilter, gradeFilter]);
+  }, [search, genderFilter, tierFilter]);
 
   return (
     <div className="space-y-6">
@@ -147,20 +145,6 @@ export default function StudentsListPage() {
               <option value="All">{T.all[lang]}</option>
               <option value="Male">{T.male[lang]}</option>
               <option value="Female">{T.female[lang]}</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500">{T.student.grade[lang]}:</span>
-            <select 
-              value={gradeFilter}
-              onChange={(e) => setGradeFilter(e.target.value)}
-              className="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--ap-navy)]/10"
-            >
-              <option value="All">{T.all[lang]}</option>
-              {[6, 7, 8, 9, 10].map(g => (
-                <option key={g} value={String(g)}>{g}th</option>
-              ))}
             </select>
           </div>
 
