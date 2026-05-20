@@ -1,13 +1,13 @@
-"""Full export: roster for ALL schools + student detail JSONs for ALL 2024-25 students.
+"""Score 2023-24 data and export JSON files to web/public/data/2023-24/.
 
-Writes to web/public/data/ (the 2024-25 canonical location):
-  web/public/data/schools.json
-  web/public/data/mandal_aggregates.json
-  web/public/data/students/<child_sno>.json
-  web/public/data/roster/<schoolid>.json
+Run once to generate the 2023-24 platform data:
+  python scripts/10_score_and_export_2023.py
 
-Run:
-  python scripts/09_full_export.py
+Outputs:
+  web/public/data/2023-24/schools.json
+  web/public/data/2023-24/mandal_aggregates.json
+  web/public/data/2023-24/students/<child_sno>.json
+  web/public/data/2023-24/roster/<schoolid>.json
 """
 from pathlib import Path
 import json, pickle, time
@@ -20,14 +20,11 @@ from sklearn.metrics import precision_recall_curve
 ROOT = Path(__file__).resolve().parents[1]
 PROC = ROOT / "data" / "processed"
 MOD  = ROOT / "models"
-ART  = ROOT / "artifacts"
-WEB  = ROOT / "web" / "public" / "data"
+WEB  = ROOT / "web" / "public" / "data" / "2023-24"
 
-ART.mkdir(exist_ok=True, parents=True)
-(ART / "roster").mkdir(exist_ok=True)
-(ART / "students").mkdir(exist_ok=True)
-(WEB / "roster").mkdir(exist_ok=True, parents=True)
-(WEB / "students").mkdir(exist_ok=True, parents=True)
+WEB.mkdir(exist_ok=True, parents=True)
+(WEB / "students").mkdir(exist_ok=True)
+(WEB / "roster").mkdir(exist_ok=True)
 MOD.mkdir(exist_ok=True, parents=True)
 
 FEATURES = [
@@ -83,33 +80,25 @@ else:
         pickle.dump({"model": model, "features": FEATURES, "threshold": threshold}, fh)
     print(f"  Saved model to {pkl_path}")
 
-    # Score and save 24-25 parquet for reuse
-    y_pred_te = (proba_te >= threshold).astype(np.int32)
-    scored_out = f24_te.with_columns([
-        pl.Series("risk_score", proba_te),
-        pl.Series("risk_pred", y_pred_te),
-    ])
-    scored_out.write_parquet(PROC / "scored_24_full.parquet")
-    print(f"  Saved scored_24_full.parquet")
+    # Also save scored_24_full if missing
+    scored_24_path = PROC / "scored_24_full.parquet"
+    if not scored_24_path.exists():
+        y_pred_te = (proba_te >= threshold).astype(np.int32)
+        scored_24 = f24_te.with_columns([
+            pl.Series("risk_score", proba_te),
+            pl.Series("risk_pred", y_pred_te),
+        ])
+        scored_24.write_parquet(scored_24_path)
+        print(f"  Also saved {scored_24_path}")
 
-# ── Load scored 2024-25 dataset ───────────────────────────────────────────────
-scored_path = PROC / "scored_24_full.parquet"
-if scored_path.exists():
-    print(f"\nLoading scored_24_full.parquet…")
-    scored = pl.read_parquet(scored_path)
-else:
-    print("\nScoring 2024-25 data…")
-    f24 = pl.read_parquet(PROC / "features_24_full.parquet")
-    X24 = f24.select(FEATURES).to_numpy().astype(np.float32)
-    proba24 = model.predict_proba(X24)[:, 1]
-    y_pred24 = (proba24 >= threshold).astype(np.int32)
-    scored = f24.with_columns([
-        pl.Series("risk_score", proba24),
-        pl.Series("risk_pred", y_pred24),
-    ])
-    scored.write_parquet(scored_path)
+# ── Load 2023-24 features and score ──────────────────────────────────────────
+print("\nLoading 2023-24 features…")
+f23 = pl.read_parquet(PROC / "features_23_full.parquet")
+print(f"  {f23.height:,} students")
 
-print(f"Total 2024-25 students: {scored.height:,}")
+X = f23.select(FEATURES).to_numpy().astype(np.float32)
+print("Scoring…")
+proba = model.predict_proba(X)[:, 1]
 
 def tier(p):
     if p >= 0.85: return "Critical"
@@ -117,15 +106,17 @@ def tier(p):
     if p >= threshold: return "Medium"
     return "Low"
 
-tiers  = [tier(p) for p in scored["risk_score"].to_list()]
-scored = scored.with_columns(pl.Series("tier", tiers))
+tiers  = [tier(p) for p in proba]
+scored = f23.with_columns([
+    pl.Series("risk_score", proba.tolist()),
+    pl.Series("tier", tiers),
+])
 
 # ── SHAP ──────────────────────────────────────────────────────────────────────
-X = scored.select(FEATURES).to_numpy().astype(np.float32)
-print(f"\nComputing SHAP for {len(X):,} students…")
+print(f"Computing SHAP for {len(X):,} students…")
 t0 = time.time()
 explainer = shap.TreeExplainer(model)
-shap_vals = explainer.shap_values(X)
+shap_vals  = explainer.shap_values(X)
 print(f"  SHAP done in {time.time()-t0:.1f}s")
 
 # ── Feature metadata (bilingual) ──────────────────────────────────────────────
@@ -172,7 +163,7 @@ def driver_sentences(shap_row, feat_row):
 
 
 def clean(v):
-    if v != v: return None
+    if v != v: return None  # NaN
     return v
 
 
@@ -184,34 +175,32 @@ written = 0
 for i, row in scored_pd.iterrows():
     child  = int(row["CHILD_SNO"])
     detail = {
-        "child_sno":             child,
-        "school_id":             int(row["schoolid"]),
-        "school_name":           clean(row.get("school_name")),
-        "district_name":         clean(row.get("district_name")),
-        "mandal_name":           clean(row.get("mandal_name")),
-        "gender":                int(row["GENDER"]),
-        "gender_label":          "Female" if row["GENDER"] == 2 else "Male",
-        "caste_clean":           int(row["caste_clean"]),
-        "age":                   int(row["age"]) if clean(row["age"]) is not None else None,
-        "attendance_rate":       float(row["attendance_rate"]),
-        "max_consec_absence":    int(row["max_consec_absence"]),
-        "fa_avg":                float(row["fa_avg"]) if clean(row["fa_avg"]) is not None else None,
-        "sa_avg":                float(row["sa_avg"]) if clean(row["sa_avg"]) is not None else None,
-        "migration_flag":        int(row["migration_flag"]),
-        "parent_literacy":       int(row["parent_literacy"]),
+        "child_sno":            child,
+        "school_id":            int(row["schoolid"]),
+        "school_name":          clean(row.get("school_name")),
+        "district_name":        clean(row.get("district_name")),
+        "mandal_name":          clean(row.get("mandal_name")),
+        "gender":               int(row["GENDER"]),
+        "gender_label":         "Female" if row["GENDER"] == 2 else "Male",
+        "caste_clean":          int(row["caste_clean"]),
+        "age":                  int(row["age"]) if clean(row["age"]) is not None else None,
+        "attendance_rate":      float(row["attendance_rate"]),
+        "max_consec_absence":   int(row["max_consec_absence"]),
+        "fa_avg":               float(row["fa_avg"]) if clean(row["fa_avg"]) is not None else None,
+        "sa_avg":               float(row["sa_avg"]) if clean(row["sa_avg"]) is not None else None,
+        "migration_flag":       int(row["migration_flag"]),
+        "parent_literacy":      int(row["parent_literacy"]),
         "family_income_bracket": int(row["family_income_bracket"]),
-        "transport_allowance":   int(row["transport_allowance"]),
-        "risk_score":            float(row["risk_score"]),
-        "tier":                  row["tier"],
-        "drivers":               driver_sentences(shap_vals[i], X[i]),
+        "transport_allowance":  int(row["transport_allowance"]),
+        "risk_score":           float(row["risk_score"]),
+        "tier":                 row["tier"],
+        "drivers":              driver_sentences(shap_vals[i], X[i]),
     }
-    js = json.dumps(detail)
-    (ART / "students" / f"{child}.json").write_text(js)
-    (WEB / "students" / f"{child}.json").write_text(js)
+    (WEB / "students" / f"{child}.json").write_text(json.dumps(detail))
     written += 1
     if written % 10000 == 0:
         elapsed = time.time() - t0
-        rate = written / elapsed
+        rate    = written / elapsed
         remaining = (len(scored_pd) - written) / rate
         print(f"  {written:,}/{len(scored_pd):,} ({rate:.0f}/s, ~{remaining/60:.1f}min left)")
 
@@ -226,18 +215,16 @@ for sid, group in school_groups:
     sub = group.sort_values("risk_score", ascending=False)
     roster = [
         {
-            "child_sno":       int(r["CHILD_SNO"]),
-            "gender_label":    "Female" if r["GENDER"] == 2 else "Male",
+            "child_sno":     int(r["CHILD_SNO"]),
+            "gender_label":  "Female" if r["GENDER"] == 2 else "Male",
             "attendance_rate": float(r["attendance_rate"]),
-            "fa_avg":          float(r["fa_avg"]) if clean(r["fa_avg"]) is not None else None,
-            "risk_score":      float(r["risk_score"]),
-            "tier":            r["tier"],
+            "fa_avg":        float(r["fa_avg"]) if clean(r["fa_avg"]) is not None else None,
+            "risk_score":    float(r["risk_score"]),
+            "tier":          r["tier"],
         }
         for _, r in sub.iterrows()
     ]
-    js = json.dumps(roster)
-    (ART / "roster" / f"{int(sid)}.json").write_text(js)
-    (WEB / "roster" / f"{int(sid)}.json").write_text(js)
+    (WEB / "roster" / f"{int(sid)}.json").write_text(json.dumps(roster))
     roster_count += 1
 
 print(f"  Wrote {roster_count:,} roster files in {time.time()-t0:.1f}s")
@@ -247,41 +234,47 @@ print("\nComputing school aggregates…")
 flagged_tiers = {"Critical", "High", "Medium"}
 school_agg = []
 for sid, group in scored_pd.groupby("schoolid"):
+    n_students  = len(group)
+    n_flagged   = int((group["tier"].isin(flagged_tiers)).sum())
+    avg_risk    = float(group["risk_score"].mean())
+    pct_critical = float((group["tier"] == "Critical").mean())
+    # grab location from first row (all rows same school)
     row0 = group.iloc[0]
     school_agg.append({
-        "school_id":     int(sid),
-        "school_name":   clean(row0.get("school_name")),
+        "school_id":    int(sid),
+        "school_name":  clean(row0.get("school_name")),
         "district_name": clean(row0.get("district_name")),
-        "mandal_name":   clean(row0.get("mandal_name")),
-        "latitude":      float(row0["latitude"]) if clean(row0["latitude"]) is not None else None,
-        "longitude":     float(row0["longitude"]) if clean(row0["longitude"]) is not None else None,
-        "n_students":    len(group),
-        "n_flagged":     int(group["tier"].isin(flagged_tiers).sum()),
-        "avg_risk":      float(group["risk_score"].mean()),
-        "pct_critical":  float((group["tier"] == "Critical").mean()),
+        "mandal_name":  clean(row0.get("mandal_name")),
+        "latitude":     float(row0["latitude"]) if clean(row0["latitude"]) is not None else None,
+        "longitude":    float(row0["longitude"]) if clean(row0["longitude"]) is not None else None,
+        "n_students":   n_students,
+        "n_flagged":    n_flagged,
+        "avg_risk":     avg_risk,
+        "pct_critical": pct_critical,
     })
 
 (WEB / "schools.json").write_text(json.dumps(school_agg))
-(ART / "schools.json").write_text(json.dumps(school_agg))
 print(f"  Wrote schools.json ({len(school_agg):,} schools)")
 
 # ── Mandal aggregates ─────────────────────────────────────────────────────────
 print("Computing mandal aggregates…")
 mandal_agg = []
 for (mandal, district), group in scored_pd.groupby(["mandal_name", "district_name"]):
+    n_students = len(group)
+    n_flagged  = int((group["tier"].isin(flagged_tiers)).sum())
+    avg_risk   = float(group["risk_score"].mean())
     row0 = group.iloc[0]
     mandal_agg.append({
         "mandal_name":   clean(mandal),
         "district_name": clean(district),
-        "n_students":    len(group),
-        "n_flagged":     int(group["tier"].isin(flagged_tiers).sum()),
-        "avg_risk":      float(group["risk_score"].mean()),
+        "n_students":    n_students,
+        "n_flagged":     n_flagged,
+        "avg_risk":      avg_risk,
         "latitude":      float(row0["latitude"]) if clean(row0["latitude"]) is not None else None,
         "longitude":     float(row0["longitude"]) if clean(row0["longitude"]) is not None else None,
     })
 
 (WEB / "mandal_aggregates.json").write_text(json.dumps(mandal_agg))
-(ART / "mandal_aggregates.json").write_text(json.dumps(mandal_agg))
 print(f"  Wrote mandal_aggregates.json ({len(mandal_agg):,} mandals)")
 
-print(f"\n✓ 2024-25 full export complete → {WEB}")
+print(f"\n✓ 2023-24 export complete → {WEB}")

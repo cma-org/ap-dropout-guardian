@@ -28,7 +28,8 @@ model District {
 }
 
 model School {
-  schoolId       BigInt          @id
+  schoolId       BigInt
+  academicYear   String          @default("2024-25")
   schoolName     String?
   districtName   String?
   mandalName     String?
@@ -40,23 +41,27 @@ model School {
   pctCritical    Float
   rosterStudents RosterStudent[]
   students       StudentDetail[]
+
+  @@id([schoolId, academicYear])
 }
 
 model Mandal {
   id           Int     @id @default(autoincrement())
   mandalName   String?
   districtName String?
+  academicYear String  @default("2024-25")
   nStudents    Int
   nFlagged     Int
   avgRisk      Float
   latitude     Float?
   longitude    Float?
 
-  @@unique([mandalName, districtName])
+  @@unique([mandalName, districtName, academicYear])
 }
 
 model StudentDetail {
-  childSno            Int            @id
+  childSno            Int
+  academicYear        String         @default("2024-25")
   schoolId            BigInt
   schoolName          String?
   districtName        String?
@@ -77,26 +82,30 @@ model StudentDetail {
   tier                RiskTier
   drivers             Driver[]
   interventions       Intervention[]
-  school              School         @relation(fields: [schoolId], references: [schoolId])
+  school              School         @relation(fields: [schoolId, academicYear], references: [schoolId, academicYear])
+
+  @@id([childSno, academicYear])
 }
 
 model Driver {
-  id         Int           @id @default(autoincrement())
-  childSno   Int
-  feature    String
-  labelEn    String
-  labelTe    String
-  contrib    Float
-  value      Float?
-  sentenceEn String
-  sentenceTe String
-  student    StudentDetail @relation(fields: [childSno], references: [childSno])
+  id           Int           @id @default(autoincrement())
+  childSno     Int
+  academicYear String        @default("2024-25")
+  feature      String
+  labelEn      String
+  labelTe      String
+  contrib      Float
+  value        Float?
+  sentenceEn   String
+  sentenceTe   String
+  student      StudentDetail @relation(fields: [childSno, academicYear], references: [childSno, academicYear])
 }
 
 model RosterStudent {
   id                  Int      @id @default(autoincrement())
   childSno            Int
   schoolId            BigInt
+  academicYear        String   @default("2024-25")
   genderLabel         String
   attendanceRate      Float
   faAvg               Float?
@@ -106,9 +115,9 @@ model RosterStudent {
   migrationFlag       Int?
   casteClean          Int?
   familyIncomeBracket Int?
-  school              School   @relation(fields: [schoolId], references: [schoolId])
+  school              School   @relation(fields: [schoolId, academicYear], references: [schoolId, academicYear])
 
-  @@unique([childSno, schoolId])
+  @@unique([childSno, schoolId, academicYear])
 }
 
 model Metrics {
@@ -135,17 +144,18 @@ model CounsellorTemplate {
 }
 
 model Intervention {
-  id          Int           @id @default(autoincrement())
-  childSno    Int
-  actionType  String
-  status      String        @default("pending")
-  assignedTo  String
-  notes       String?
-  createdAt   DateTime      @default(now())
-  completedAt DateTime?
-  createdBy   Int?
-  student     StudentDetail @relation(fields: [childSno], references: [childSno])
-  user        User?         @relation(fields: [createdBy], references: [id])
+  id           Int           @id @default(autoincrement())
+  childSno     Int
+  academicYear String        @default("2024-25")
+  actionType   String
+  status       String        @default("pending")
+  assignedTo   String
+  notes        String?
+  createdAt    DateTime      @default(now())
+  completedAt  DateTime?
+  createdBy    Int?
+  student      StudentDetail @relation(fields: [childSno, academicYear], references: [childSno, academicYear])
+  user         User?         @relation(fields: [createdBy], references: [id])
 }
 
 model DataUpload {
