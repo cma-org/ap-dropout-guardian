@@ -1,24 +1,28 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
+import { useAcademicYear } from "@/lib/academic-year";
 import DistrictAnalyticsView from "./DistrictAnalyticsView";
 import type { DistrictAnalytics } from "@/lib/analytics-types";
 
 export default function DistrictAnalyticsPage() {
   const { user } = useAuth();
+  const { year } = useAcademicYear();
   const [data, setData] = useState<DistrictAnalytics | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user?.district) return;
-    fetch(`/api/analytics/district/${encodeURIComponent(user.district)}`)
+    setData(null);
+    setError("");
+    fetch(`/api/analytics/district/${encodeURIComponent(user.district)}?academicYear=${year}`)
       .then(res => {
         if (!res.ok) throw new Error(`API ${res.status}`);
         return res.json() as Promise<DistrictAnalytics>;
       })
       .then(setData)
       .catch(err => setError(err.message));
-  }, [user?.district]);
+  }, [user?.district, year]);
 
   if (error) {
     return (

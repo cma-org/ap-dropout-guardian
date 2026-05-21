@@ -6,19 +6,20 @@ import { ChevronRight } from "lucide-react";
 
 export default async function SEDDistrictDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ district: string }>;
+  searchParams: Promise<{ year?: string; id?: string }>;
 }) {
-  const { district } = await params;
+  const [{ district }, { year = "2024-25" }] = await Promise.all([params, searchParams]);
   const districtName = decodeURIComponent(district);
-  const allSchools = await getSchools();
+  const allSchools = await getSchools(year);
   const districtSchools = (allSchools ?? []).filter(
     s => s.district_name === districtName
   );
 
   return (
     <div className="space-y-5">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-zinc-500">
         <Link href="/dashboard/sed/districts" className="hover:text-zinc-900 transition-colors">
           Districts
@@ -33,7 +34,7 @@ export default async function SEDDistrictDetailPage({
           Loading schools…
         </div>
       }>
-        <DistrictSchoolsView schools={districtSchools} />
+        <DistrictSchoolsView schools={districtSchools} academicYear={year} />
       </Suspense>
     </div>
   );

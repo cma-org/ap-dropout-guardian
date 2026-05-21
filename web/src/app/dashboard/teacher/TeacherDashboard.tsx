@@ -45,9 +45,11 @@ function makeTrend(roster: RosterStudent[]) {
 export default function TeacherDashboard({
   roster,
   school,
+  academicYear = "2024-25",
 }: {
   roster: RosterStudent[];
   school: School | null;
+  academicYear?: string;
 }) {
   const { user } = useAuth();
   const { lang } = useLang();
@@ -219,7 +221,7 @@ export default function TeacherDashboard({
                 return (
                   <tr
                     key={s.child_sno}
-                    onClick={() => router.push(`/student/${s.child_sno}`)}
+                    onClick={() => router.push(`/student/${s.child_sno}?year=${academicYear}`)}
                     className={cn(
                       "cursor-pointer border-b border-zinc-100 last:border-0 transition-colors group",
                       "hover:brightness-95",
@@ -320,7 +322,7 @@ export default function TeacherDashboard({
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link href={`/student/${critical[0]?.child_sno}`} className="rounded-xl border border-red-200 bg-red-50 p-4 hover:bg-red-100 transition flex items-center justify-between group">
+        <Link href={`/student/${critical[0]?.child_sno}?year=${academicYear}`} className="rounded-xl border border-red-200 bg-red-50 p-4 hover:bg-red-100 transition flex items-center justify-between group">
           <div>
             <div className="font-semibold text-red-900">{T.teacherDashboard.reviewTop[lang]}</div>
             <div className="text-sm text-red-700 mt-0.5">{T.teacherDashboard.reviewTopSub[lang]}</div>

@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_DASHBOARD } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ACADEMIC_YEARS, DEFAULT_YEAR, type AcademicYear } from "@/lib/academic-year";
 import { LayoutDashboard, Home, Info, Map as MapIcon, Users, Database, Activity, BookOpen, Heart, Building2, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -11,6 +12,12 @@ export default function Sidebar() {
   const { lang } = useLang();
   const { user } = useAuth();
   const path = usePathname();
+  const searchParams = useSearchParams();
+  const rawYear = searchParams.get("year");
+  const currentYear: AcademicYear =
+    rawYear && ACADEMIC_YEARS.includes(rawYear as AcademicYear)
+      ? (rawYear as AcademicYear)
+      : DEFAULT_YEAR;
   const [alertCount, setAlertCount] = useState(0);
 
   useEffect(() => {
@@ -20,53 +27,55 @@ export default function Sidebar() {
     }
   }, []);
 
+  const y = (href: string) => `${href}?year=${currentYear}`;
+
   const getNav = () => {
     const nav = [];
 
     if (user) {
       // My Dashboard (role specific)
-      nav.push({ 
-        href: ROLE_DASHBOARD[user.role], 
-        label: T.common.myDashboard[lang], 
-        icon: <LayoutDashboard className="h-4 w-4" /> 
+      nav.push({
+        href: y(ROLE_DASHBOARD[user.role]),
+        label: T.common.myDashboard[lang],
+        icon: <LayoutDashboard className="h-4 w-4" />
       });
 
       // Role specific pages
       if (user.role === "teacher") {
-        nav.push({ href: "/teacher/students", label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
-        nav.push({ href: "/teacher/alerts", label: T.nav.alerts[lang], icon: <Bell className="h-4 w-4" />, badge: alertCount > 0 ? alertCount : undefined });
-        nav.push({ href: "/teacher/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
-        nav.push({ href: "/teacher/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
+        nav.push({ href: y("/teacher/students"), label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
+        nav.push({ href: y("/teacher/alerts"), label: T.nav.alerts[lang], icon: <Bell className="h-4 w-4" />, badge: alertCount > 0 ? alertCount : undefined });
+        nav.push({ href: y("/teacher/data"), label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
+        nav.push({ href: y("/teacher/analytics"), label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
       }
 
       if (user.role === "hm") {
-        nav.push({ href: "/hm/students", label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
-        nav.push({ href: "/hm/alerts", label: T.nav.alerts[lang], icon: <Bell className="h-4 w-4" />, badge: alertCount > 0 ? alertCount : undefined });
-        nav.push({ href: "/hm/teachers", label: T.nav.teachers[lang], icon: <Users className="h-4 w-4" /> });
-        nav.push({ href: "/hm/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
-        nav.push({ href: "/hm/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
+        nav.push({ href: y("/hm/students"), label: T.nav.students[lang], icon: <Users className="h-4 w-4" /> });
+        nav.push({ href: y("/hm/alerts"), label: T.nav.alerts[lang], icon: <Bell className="h-4 w-4" />, badge: alertCount > 0 ? alertCount : undefined });
+        nav.push({ href: y("/hm/teachers"), label: T.nav.teachers[lang], icon: <Users className="h-4 w-4" /> });
+        nav.push({ href: y("/hm/data"), label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
+        nav.push({ href: y("/hm/analytics"), label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
       }
 
       // District Heatmap - ONLY for district officer
       if (user.role === "district") {
-        nav.push({ href: "/dashboard/district/schools", label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
-        nav.push({ href: "/dashboard/district/data", label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
-        nav.push({ href: "/dashboard/district/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
-        nav.push({ href: "/dashboard/district/map", label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
+        nav.push({ href: y("/dashboard/district/schools"), label: T.nav.schools[lang], icon: <Home className="h-4 w-4" /> });
+        nav.push({ href: y("/dashboard/district/data"), label: T.nav.data[lang], icon: <Database className="h-4 w-4" /> });
+        nav.push({ href: y("/dashboard/district/analytics"), label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
+        nav.push({ href: y("/dashboard/district/map"), label: T.nav.map[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
 
       // School Education Department — super admin, sees everything
       if (user.role === "sed") {
-        nav.push({ href: "/dashboard/sed/districts", label: lang === "en" ? "Districts" : "జిల్లాలు", icon: <Building2 className="h-4 w-4" /> });
-        nav.push({ href: "/dashboard/sed/analytics", label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
-        nav.push({ href: "/map", label: T.nav.stateMap[lang], icon: <MapIcon className="h-4 w-4" /> });
+        nav.push({ href: y("/dashboard/sed/districts"), label: lang === "en" ? "Districts" : "జిల్లాలు", icon: <Building2 className="h-4 w-4" /> });
+        nav.push({ href: y("/dashboard/sed/analytics"), label: T.nav.analytics[lang], icon: <Activity className="h-4 w-4" /> });
+        nav.push({ href: y("/map"), label: T.nav.stateMap[lang], icon: <MapIcon className="h-4 w-4" /> });
       }
 
       // Model Overview / Community / API Docs — district & SED only
       if (user.role === "district" || user.role === "sed") {
-        nav.push({ href: "/overview", label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
-        nav.push({ href: "/community", label: lang === "en" ? "Community Report" : "కమ్యూనిటీ నివేదిక", icon: <Heart className="h-4 w-4" /> });
-        nav.push({ href: "/api-docs", label: lang === "en" ? "API Docs" : "API డాక్స్", icon: <BookOpen className="h-4 w-4" /> });
+        nav.push({ href: y("/overview"), label: T.nav.overview[lang], icon: <Info className="h-4 w-4" /> });
+        nav.push({ href: y("/community"), label: lang === "en" ? "Community Report" : "కమ్యూనిటీ నివేదిక", icon: <Heart className="h-4 w-4" /> });
+        nav.push({ href: y("/api-docs"), label: lang === "en" ? "API Docs" : "API డాక్స్", icon: <BookOpen className="h-4 w-4" /> });
       }
     } else {
       // Guests only see Home
@@ -89,13 +98,14 @@ export default function Sidebar() {
             </div>
             <nav className="space-y-1">
               {navItems.filter(n => !n.href.includes('overview') && !n.href.includes('map') && !n.href.includes('community') && !n.href.includes('api-docs')).map((n) => {
-                const active = n.href === "/"
+                const basePath = n.href.split("?")[0];
+                const active = basePath === "/"
                   ? path === "/"
-                  : (user && n.href === ROLE_DASHBOARD[user.role] ? path === n.href : path.startsWith(n.href));
+                  : (user && basePath === ROLE_DASHBOARD[user.role] ? path === basePath : path.startsWith(basePath));
                 const isAlert = n.href.includes('/alerts');
                 return (
                   <Link
-                    key={n.href}
+                    key={basePath}
                     href={n.href}
                     className={cn(
                       "group flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
@@ -131,10 +141,11 @@ export default function Sidebar() {
             </div>
             <nav className="space-y-1">
               {navItems.filter(n => n.href.includes('overview') || n.href.includes('map') || n.href.includes('community') || n.href.includes('api-docs')).map((n) => {
-                const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
+                const basePath = n.href.split("?")[0];
+                const active = basePath === "/" ? path === "/" : path.startsWith(basePath);
                 return (
                   <Link
-                    key={n.href}
+                    key={basePath}
                     href={n.href}
                     className={cn(
                       "group flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",

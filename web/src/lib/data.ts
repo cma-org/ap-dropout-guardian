@@ -4,7 +4,6 @@ import type {
 } from "./types";
 import type { DistrictAnalytics } from "./analytics-types";
 
-// API_URL is required — the app does not fall back to local JSON files.
 const API_URL = process.env.API_URL;
 
 if (!API_URL) {
@@ -14,14 +13,10 @@ if (!API_URL) {
   );
 }
 
-// ─── helper ──────────────────────────────────────────────────────────────────
-
 async function apiFetch<T>(endpoint: string): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${endpoint}`, {
-      cache: "no-store",
-    });
+    res = await fetch(`${API_URL}${endpoint}`, { cache: "no-store" });
   } catch (cause) {
     throw new Error(
       `Cannot reach backend at ${API_URL}${endpoint}. ` +
@@ -34,50 +29,55 @@ async function apiFetch<T>(endpoint: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+function qs(academicYear: string, extra?: Record<string, string>): string {
+  const params = new URLSearchParams({ academicYear, ...extra });
+  return `?${params.toString()}`;
+}
+
 // ─── public API ──────────────────────────────────────────────────────────────
 
 export async function getMetrics(): Promise<Metrics> {
   return apiFetch<Metrics>("/api/metrics");
 }
 
-export async function getSchools(): Promise<School[]> {
-  return apiFetch<School[]>("/api/schools");
+export async function getSchools(academicYear = "2024-25"): Promise<School[]> {
+  return apiFetch<School[]>(`/api/schools${qs(academicYear)}`);
 }
 
-export async function getSchool(schoolId: number): Promise<School | null> {
+export async function getSchool(schoolId: number, academicYear = "2024-25"): Promise<School | null> {
   try {
-    return await apiFetch<School>(`/api/schools/${schoolId}`);
+    return await apiFetch<School>(`/api/schools/${schoolId}${qs(academicYear)}`);
   } catch {
     return null;
   }
 }
 
-export async function getMandals(): Promise<Mandal[]> {
-  return apiFetch<Mandal[]>("/api/mandals");
+export async function getMandals(academicYear = "2024-25"): Promise<Mandal[]> {
+  return apiFetch<Mandal[]>(`/api/mandals${qs(academicYear)}`);
 }
 
 export async function getDistricts(): Promise<string[]> {
   return apiFetch<string[]>("/api/districts");
 }
 
-export async function getStudent(childSno: number): Promise<StudentDetail | null> {
+export async function getStudent(childSno: number, academicYear = "2024-25"): Promise<StudentDetail | null> {
   try {
-    return await apiFetch<StudentDetail>(`/api/students/${childSno}`);
+    return await apiFetch<StudentDetail>(`/api/students/${childSno}${qs(academicYear)}`);
   } catch {
     return null;
   }
 }
 
-export async function getRoster(schoolId: number): Promise<RosterStudent[] | null> {
+export async function getRoster(schoolId: number, academicYear = "2024-25"): Promise<RosterStudent[] | null> {
   try {
-    return await apiFetch<RosterStudent[]>(`/api/schools/${schoolId}/roster`);
+    return await apiFetch<RosterStudent[]>(`/api/schools/${schoolId}/roster${qs(academicYear)}`);
   } catch {
     return null;
   }
 }
 
-export async function getFlaggedSchoolIds(): Promise<number[]> {
-  return apiFetch<number[]>("/api/schools/flagged");
+export async function getFlaggedSchoolIds(academicYear = "2024-25"): Promise<number[]> {
+  return apiFetch<number[]>(`/api/schools/flagged${qs(academicYear)}`);
 }
 
 export async function getCounsellorTemplates(): Promise<CounsellorTemplates> {
@@ -112,8 +112,10 @@ export async function getModelChangelog(): Promise<unknown[] | null> {
   }
 }
 
-export async function getDistrictAnalytics(districtName: string): Promise<DistrictAnalytics> {
-  return apiFetch<DistrictAnalytics>(`/api/analytics/district/${encodeURIComponent(districtName)}`);
+export async function getDistrictAnalytics(districtName: string, academicYear = "2024-25"): Promise<DistrictAnalytics> {
+  return apiFetch<DistrictAnalytics>(
+    `/api/analytics/district/${encodeURIComponent(districtName)}${qs(academicYear)}`
+  );
 }
 
 export function pickCounsellorTemplate(

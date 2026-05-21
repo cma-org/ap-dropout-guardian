@@ -46,7 +46,7 @@ function gradeBreakdown(roster: RosterStudent[]) {
   });
 }
 
-export default function HMDashboard({ roster, school }: { roster: RosterStudent[]; school: School | null }) {
+export default function HMDashboard({ roster, school, academicYear = "2024-25" }: { roster: RosterStudent[]; school: School | null; academicYear?: string }) {
   const { user } = useAuth();
   const { lang } = useLang();
   const router = useRouter();
@@ -186,7 +186,7 @@ export default function HMDashboard({ roster, school }: { roster: RosterStudent[
                   <td className="px-4 py-2.5 text-right tabular-nums text-zinc-700">{s.fa_avg !== null ? s.fa_avg.toFixed(0) : "—"}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums font-medium text-red-700">{(s.risk_score * 100).toFixed(1)}%</td>
                   <td className="px-4 py-2.5">
-                    <Link href={`/student/${s.child_sno}`} className="text-[color:var(--ap-navy)] hover:underline text-xs flex items-center gap-1">
+                    <Link href={`/student/${s.child_sno}?year=${academicYear}`} className="text-[color:var(--ap-navy)] hover:underline text-xs flex items-center gap-1">
                       View <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   </td>

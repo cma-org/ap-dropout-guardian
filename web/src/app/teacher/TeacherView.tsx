@@ -21,7 +21,7 @@ function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-export default function TeacherView({ schools }: { schools: School[] }) {
+export default function TeacherView({ schools, academicYear = "2024-25" }: { schools: School[]; academicYear?: string }) {
   const { lang } = useLang();
   const { user } = useAuth();
   const teacherGrade = user?.role === "teacher" && user.grade ? String(user.grade) : "All";
@@ -227,7 +227,7 @@ export default function TeacherView({ schools }: { schools: School[] }) {
                         {filtered.slice(0, 200).map((r) => (
                           <tr key={r.child_sno} className="border-t border-zinc-100 hover:bg-zinc-50">
                             <td className="py-2 pr-4">
-                              <Link href={`/student/${r.child_sno}`} className="text-[color:var(--ap-navy)] hover:underline font-medium">
+                              <Link href={`/student/${r.child_sno}?year=${academicYear}`} className="text-[color:var(--ap-navy)] hover:underline font-medium">
                                 {r.child_sno}
                               </Link>
                             </td>

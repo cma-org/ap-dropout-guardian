@@ -1,4 +1,5 @@
 "use client";
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -24,7 +25,11 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     <div className="min-h-full flex flex-col">
       <Header />
       <div className="flex flex-1 min-h-0">
-        {user && <Sidebar />}
+        {user && (
+          <Suspense fallback={<div className="w-64 shrink-0 border-r border-zinc-200 bg-zinc-50/30 hidden md:block" />}>
+            <Sidebar />
+          </Suspense>
+        )}
         <div className="flex-1 flex flex-col min-w-0">
           <main className={`flex-1 w-full ${pathname === '/' ? '' : 'max-w-[1400px] mx-auto px-6 py-6'}`}>
             {children}

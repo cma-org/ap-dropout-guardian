@@ -4,11 +4,12 @@ import { transformSchool, transformRosterStudent } from "../lib/transform";
 
 const router = Router();
 
-// GET /api/schools?district=NTR
+// GET /api/schools?district=NTR&academicYear=2024-25
 router.get("/", async (req, res) => {
   try {
-    const { district } = req.query as { district?: string };
-    const where = district ? { districtName: district } : {};
+    const { district, academicYear = "2024-25" } = req.query as { district?: string; academicYear?: string };
+    const where: Record<string, unknown> = { academicYear };
+    if (district) where.districtName = district;
 
     const schools = await prisma.school.findMany({
       where,
@@ -26,11 +27,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/schools/flagged  — must be declared before /:schoolId
-router.get("/flagged", async (_req, res) => {
+// GET /api/schools/flagged?academicYear=2024-25  — must be declared before /:schoolId
+router.get("/flagged", async (req, res) => {
   try {
+    const { academicYear = "2024-25" } = req.query as { academicYear?: string };
     const schools = await prisma.school.findMany({
-      where: { nFlagged: { gt: 0 } },
+      where: { nFlagged: { gt: 0 }, academicYear },
       select: { schoolId: true },
     });
     res.json(schools.map((s) => Number(s.schoolId)));
@@ -40,11 +42,12 @@ router.get("/flagged", async (_req, res) => {
   }
 });
 
-// GET /api/schools/:schoolId
+// GET /api/schools/:schoolId?academicYear=2024-25
 router.get("/:schoolId", async (req, res) => {
   try {
+    const { academicYear = "2024-25" } = req.query as { academicYear?: string };
     const school = await prisma.school.findUnique({
-      where: { schoolId: BigInt(req.params.schoolId) },
+      where: { schoolId_academicYear: { schoolId: BigInt(req.params.schoolId), academicYear } },
     });
     if (!school) {
       res.status(404).json({ error: "School not found" });
@@ -57,11 +60,12 @@ router.get("/:schoolId", async (req, res) => {
   }
 });
 
-// GET /api/schools/:schoolId/roster
+// GET /api/schools/:schoolId/roster?academicYear=2024-25
 router.get("/:schoolId/roster", async (req, res) => {
   try {
+    const { academicYear = "2024-25" } = req.query as { academicYear?: string };
     const roster = await prisma.rosterStudent.findMany({
-      where: { schoolId: BigInt(req.params.schoolId) },
+      where: { schoolId: BigInt(req.params.schoolId), academicYear },
       orderBy: { riskScore: "desc" },
     });
     if (!roster.length) {

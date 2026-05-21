@@ -20,7 +20,7 @@ function riskLabel(avg: number): { label: string; color: string } {
   return { label: "Low", color: "text-emerald-700 bg-emerald-50 border-emerald-200" };
 }
 
-function SchoolDetailPanel({ school, onClose, lang }: { school: School; onClose: () => void; lang: "en" | "te" }) {
+function SchoolDetailPanel({ school, onClose, lang, academicYear = "2024-25" }: { school: School; onClose: () => void; lang: "en" | "te"; academicYear?: string }) {
   const { label, color } = riskLabel(school.avg_risk);
   const pct = school.n_students > 0 ? (school.n_flagged / school.n_students) * 100 : 0;
 
@@ -78,7 +78,7 @@ function SchoolDetailPanel({ school, onClose, lang }: { school: School; onClose:
       <div className="rounded-lg border p-3 mb-4 bg-white">
         <div className="text-xs text-zinc-500 mb-0.5">{lang === "en" ? "Average dropout probability" : "సగటు డ్రాపౌట్ సంభావ్యత"}</div>
         <div className="text-lg font-bold text-zinc-900">{pctFormat(school.avg_risk, 1)}</div>
-        <div className="text-[10px] text-zinc-400">{lang === "en" ? "XGBoost model output, AY 2024-25" : "XGBoost మోడల్, AY 2024-25"}</div>
+        <div className="text-[10px] text-zinc-400">{lang === "en" ? `XGBoost model output, AY ${academicYear}` : `XGBoost మోడల్, AY ${academicYear}`}</div>
       </div>
 
       <Link
@@ -97,11 +97,13 @@ function DistrictDetailPanel({
   schools,
   onClose,
   lang,
+  academicYear = "2024-25",
 }: {
   district: DistrictInfo;
   schools: School[];
   onClose: () => void;
   lang: "en" | "te";
+  academicYear?: string;
 }) {
   const { label, color } = riskLabel(district.avg_risk);
   const pct = district.n_students > 0 ? (district.n_flagged / district.n_students) * 100 : 0;
@@ -182,7 +184,7 @@ function DistrictDetailPanel({
       <div className="rounded-lg border p-3 mb-4 bg-white">
         <div className="text-xs text-zinc-500 mb-0.5">{lang === "en" ? "Average dropout probability" : "సగటు డ్రాపౌట్ సంభావ్యత"}</div>
         <div className="text-lg font-bold text-zinc-900">{pctFormat(district.avg_risk, 1)}</div>
-        <div className="text-[10px] text-zinc-400">{lang === "en" ? "XGBoost model output, AY 2024-25" : "XGBoost మోడల్, AY 2024-25"}</div>
+        <div className="text-[10px] text-zinc-400">{lang === "en" ? `XGBoost model output, AY ${academicYear}` : `XGBoost మోడల్, AY ${academicYear}`}</div>
       </div>
 
       {/* Top Schools in District */}
@@ -248,7 +250,7 @@ function DistrictDetailPanel({
   );
 }
 
-export default function MapView({ schools, mandals, topMandals }: { schools: School[]; mandals: MandalInfo[]; topMandals: Mandal[] }) {
+export default function MapView({ schools, mandals, topMandals, academicYear = "2024-25" }: { schools: School[]; mandals: MandalInfo[]; topMandals: Mandal[]; academicYear?: string }) {
   const { lang } = useLang();
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictInfo | null>(null);
@@ -321,6 +323,8 @@ export default function MapView({ schools, mandals, topMandals }: { schools: Sch
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
         <div className="rounded-xl border bg-white overflow-hidden relative" style={{ height: "640px" }}>
           <SchoolMapComponent
+            key={academicYear}
+            mapKey={academicYear}
             schools={schools}
             mandals={mandals}
             onSchoolSelect={handleSchoolSelect}
@@ -373,12 +377,14 @@ export default function MapView({ schools, mandals, topMandals }: { schools: Sch
               schools={selectedDistrict.schools}
               onClose={handleClose}
               lang={lang}
+              academicYear={academicYear}
             />
           ) : selectedSchool ? (
             <SchoolDetailPanel
               school={selectedSchool}
               onClose={handleClose}
               lang={lang}
+              academicYear={academicYear}
             />
           ) : (
             <>

@@ -6,31 +6,32 @@ const router = Router();
 router.get("/district/:districtName", async (req, res) => {
   try {
     const districtName = req.params.districtName as string;
+    const { academicYear = "2024-25" } = req.query as { academicYear?: string };
 
-    const schools = await prisma.school.findMany({ where: { districtName } });
+    const schools = await prisma.school.findMany({ where: { districtName, academicYear } });
 
     const studentAggr = await prisma.rosterStudent.aggregate({
-      where: { school: { districtName } },
+      where: { school: { districtName, academicYear } },
       _count: { childSno: true },
       _avg: { attendanceRate: true, riskScore: true },
     });
 
     const tierGroups = await prisma.rosterStudent.groupBy({
       by: ["tier"],
-      where: { school: { districtName } },
+      where: { school: { districtName, academicYear } },
       _count: { childSno: true },
     });
 
     const genderGroups = await prisma.rosterStudent.groupBy({
       by: ["genderLabel"],
-      where: { school: { districtName } },
+      where: { school: { districtName, academicYear } },
       _count: { genderLabel: true },
       _avg: { riskScore: true },
     });
 
     const driverGroups = await prisma.driver.groupBy({
       by: ["feature", "labelEn", "labelTe"],
-      where: { student: { districtName } },
+      where: { student: { districtName, academicYear } },
       _avg: { contrib: true },
       _count: { feature: true },
       orderBy: { _avg: { contrib: "desc" as const } },
@@ -39,13 +40,13 @@ router.get("/district/:districtName", async (req, res) => {
 
     const interventionGroups = await prisma.intervention.groupBy({
       by: ["status"],
-      where: { student: { districtName } },
+      where: { student: { districtName, academicYear } },
       _count: { status: true },
     });
 
     const incomeGroups = await prisma.rosterStudent.groupBy({
       by: ["familyIncomeBracket"],
-      where: { school: { districtName } },
+      where: { school: { districtName, academicYear } },
       _count: { childSno: true },
       _avg: { riskScore: true },
     });
@@ -59,48 +60,45 @@ router.get("/district/:districtName", async (req, res) => {
     const attendanceAggs = [];
     for (const b of buckets) {
       const [total, atRisk] = await Promise.all([
-        prisma.rosterStudent.count({ where: { school: { districtName }, attendanceRate: { gte: b.gte, lt: b.lt } } }),
+        prisma.rosterStudent.count({ where: { school: { districtName, academicYear }, attendanceRate: { gte: b.gte, lt: b.lt } } }),
         prisma.rosterStudent.count({
-          where: { school: { districtName }, attendanceRate: { gte: b.gte, lt: b.lt }, tier: { in: ["Critical", "High"] } },
+          where: { school: { districtName, academicYear }, attendanceRate: { gte: b.gte, lt: b.lt }, tier: { in: ["Critical", "High"] } },
         }),
       ]);
       attendanceAggs.push({ ...b, total, atRisk });
     }
 
-    const gradeAggs = [];
-    // Attempt to get grade info from studentDetail (using age as proxy)
     const ageGroups = await prisma.studentDetail.groupBy({
       by: ["age"],
-      where: { districtName, age: { not: null } },
+      where: { districtName, academicYear, age: { not: null } },
       _count: { _all: true },
     });
 
     const totalRosterCount = await prisma.rosterStudent.count({
-      where: { school: { districtName } }
+      where: { school: { districtName, academicYear } }
     });
 
     const activeAges = ageGroups.map(g => g.age).filter(a => a !== null) as number[];
     const numGrades = activeAges.length || 1;
     const estimatedTotalPerGrade = Math.round(totalRosterCount / numGrades);
 
+    const gradeAggs = [];
     for (const group of ageGroups) {
       const age = group.age as number;
-      const grade = age - 6; 
+      const grade = age - 6;
       if (grade < 1 || grade > 12) continue;
-      
+
       const flagged = await prisma.studentDetail.count({
-        where: { districtName, age, tier: { in: ["Critical", "High"] } }
+        where: { districtName, academicYear, age, tier: { in: ["Critical", "High"] } }
       });
 
-      // Use estimatedTotalPerGrade instead of group._count?._all to avoid 100% risk rates
       const total = estimatedTotalPerGrade;
-
       gradeAggs.push({ grade, total, flagged, rate: total > 0 ? flagged / total : 0 });
     }
     gradeAggs.sort((a, b) => a.grade - b.grade);
 
     const allStudents = (await prisma.rosterStudent.findMany({
-      where: { school: { districtName } },
+      where: { school: { districtName, academicYear } },
       select: {
         childSno: true, attendanceRate: true, riskScore: true,
         tier: true, genderLabel: true, schoolId: true,
@@ -119,12 +117,11 @@ router.get("/district/:districtName", async (req, res) => {
     const nHigh = totalFlagged - nCritical;
     const nOther = totalStudents - totalFlagged;
 
-    // Use roster for Medium vs Low split if available
     const mediumInRoster = (tierGroups as any[]).find((t: any) => t.tier === "Medium")?._count?.childSno ?? 0;
     const lowInRoster = (tierGroups as any[]).find((t: any) => t.tier === "Low")?._count?.childSno ?? 0;
     const otherInRoster = mediumInRoster + lowInRoster;
-    
-    const nMedium = otherInRoster > 0 ? Math.round(nOther * (mediumInRoster / otherInRoster)) : Math.round(nOther * 0.15); 
+
+    const nMedium = otherInRoster > 0 ? Math.round(nOther * (mediumInRoster / otherInRoster)) : Math.round(nOther * 0.15);
     const nLow = nOther - nMedium;
 
     const tierDistribution = [
@@ -143,7 +140,7 @@ router.get("/district/:districtName", async (req, res) => {
     const genderFlagged = await Promise.all(
       genderDistribution.map(async (g) => {
         const flagged = await prisma.rosterStudent.count({
-          where: { school: { districtName }, genderLabel: g.label, tier: { in: ["Critical", "High"] } },
+          where: { school: { districtName, academicYear }, genderLabel: g.label, tier: { in: ["Critical", "High"] } },
         });
         return { ...g, flagged };
       })
@@ -243,7 +240,7 @@ router.get("/district/:districtName", async (req, res) => {
 
     const trendMonths = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
     const allInterventions = await prisma.intervention.findMany({
-      where: { student: { districtName } },
+      where: { student: { districtName, academicYear } },
       select: { createdAt: true },
     });
     const interventionsPerMonth: Record<string, number> = {};
@@ -280,6 +277,7 @@ router.get("/district/:districtName", async (req, res) => {
       topAreas: topAreasData,
       trends,
       districtName,
+      academicYear,
     });
   } catch (err) {
     console.error("Analytics error:", err);

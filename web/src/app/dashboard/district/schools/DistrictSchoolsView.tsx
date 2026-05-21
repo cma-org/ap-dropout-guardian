@@ -82,7 +82,7 @@ function generateSimulatedRoster(school: School, existing: RosterStudent[] = [])
   return roster.sort((a, b) => b.risk_score - a.risk_score);
 }
 
-export default function DistrictSchoolsView({ schools }: { schools: School[] }) {
+export default function DistrictSchoolsView({ schools, academicYear = "2024-25" }: { schools: School[]; academicYear?: string }) {
   const { lang } = useLang();
   const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState<number>(() => {
@@ -123,8 +123,8 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
   useEffect(() => {
     if (!selectedId) return;
     setLoading(true);
-    setRoster(null); // Reset roster while loading new school
-    fetch(`/api/schools/${selectedId}/roster`)
+    setRoster(null);
+    fetch(`/api/schools/${selectedId}/roster?academicYear=${academicYear}`)
       .then((r) => {
         if (!r.ok) return null;
         return r.json();
@@ -149,7 +149,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
         }
       })
       .finally(() => setLoading(false));
-  }, [selectedId]);
+  }, [selectedId, academicYear]);
 
   const filteredSchools = useMemo(() => {
     const base = search
@@ -477,7 +477,7 @@ export default function DistrictSchoolsView({ schools }: { schools: School[] }) 
                                 {r._sim ? (
                                   <span className="text-zinc-400 font-bold">{r.child_sno}</span>
                                 ) : (
-                                  <Link href={`/student/${r.child_sno}`} className="text-[color:var(--ap-navy)] hover:underline font-bold">
+                                  <Link href={`/student/${r.child_sno}?year=${academicYear}`} className="text-[color:var(--ap-navy)] hover:underline font-bold">
                                     {r.child_sno}
                                   </Link>
                                 )}

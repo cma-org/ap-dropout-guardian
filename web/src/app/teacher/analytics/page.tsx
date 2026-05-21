@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
+import { useSearchParams } from "next/navigation";
 import type { RosterStudent } from "@/lib/types";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -77,12 +78,14 @@ function ChartCard({ id, icon, iconColor, title, subtitle, children }: {
 export default function TeacherAnalyticsPage() {
   const { user } = useAuth();
   const { lang } = useLang();
+  const searchParams = useSearchParams();
+  const year = searchParams.get("year") ?? "2024-25";
   const [students, setStudents] = useState<RosterStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/api/schools/${user.schoolId}/roster`)
+      fetch(`/api/schools/${user.schoolId}/roster?academicYear=${year}`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
           const enriched = data.map((s: any) => {
@@ -102,7 +105,7 @@ export default function TeacherAnalyticsPage() {
           setLoading(false);
         });
     }
-  }, [user]);
+  }, [user, year]);
 
   // Filter students by teacher's assigned grade
   const teacherGrade = user?.role === "teacher" ? user.grade : null;

@@ -4,18 +4,19 @@ import { transformStudent } from "../lib/transform";
 
 const router = Router();
 
-// GET /api/students?schoolId=&tier=&district=&limit=100&offset=0
+// GET /api/students?schoolId=&tier=&district=&academicYear=2024-25&limit=100&offset=0
 router.get("/", async (req, res) => {
   try {
     const {
       schoolId,
       tier,
       district,
+      academicYear = "2024-25",
       limit = "100",
       offset = "0",
     } = req.query as Record<string, string>;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { academicYear };
     if (schoolId) where.schoolId = BigInt(schoolId);
     if (tier) where.tier = tier;
     if (district) where.districtName = district;
@@ -38,24 +39,26 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/students/:childSno
+// GET /api/students/:childSno?academicYear=2024-25
 router.get("/:childSno", async (req, res) => {
   try {
     const childSno = parseInt(req.params.childSno, 10);
+    const academicYear = (req.query.academicYear as string) ?? "2024-25";
+
     if (isNaN(childSno)) {
       res.status(400).json({ error: "Invalid student ID" });
       return;
     }
 
     const student = await prisma.studentDetail.findUnique({
-      where: { childSno },
+      where: { childSno_academicYear: { childSno, academicYear } },
       include: { drivers: { orderBy: { contrib: "desc" } } },
     });
 
     if (!student) {
       // Fallback: synthesize a partial profile from roster data
       const roster = await prisma.rosterStudent.findFirst({
-        where: { childSno },
+        where: { childSno, academicYear },
         include: { school: true },
       });
       if (!roster) {

@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
  * API_URL or causing CORS issues.
  * GET /api/schools → backend /api/schools
  */
-export async function GET() {
+export async function GET(request: Request) {
   const apiUrl = process.env.API_URL;
   if (!apiUrl) {
     return NextResponse.json(
@@ -14,7 +14,8 @@ export async function GET() {
     );
   }
 
-  const res = await fetch(`${apiUrl}/api/schools`, {
+  const { searchParams } = new URL(request.url);
+  const res = await fetch(`${apiUrl}/api/schools?${searchParams.toString()}`, {
     cache: "no-store",
   });
 

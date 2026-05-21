@@ -4,11 +4,12 @@ import { requireInternalOrAuth } from "../middleware/internalAuth";
 
 const router = Router();
 
-// GET /api/interventions?childSno=123
+// GET /api/interventions?childSno=123&academicYear=2024-25
 router.get("/", requireInternalOrAuth, async (req, res) => {
   try {
-    const { childSno } = req.query as { childSno?: string };
-    const where = childSno ? { childSno: parseInt(childSno, 10) } : {};
+    const { childSno, academicYear = "2024-25" } = req.query as { childSno?: string; academicYear?: string };
+    const where: Record<string, unknown> = { academicYear };
+    if (childSno) where.childSno = parseInt(childSno, 10);
 
     const interventions = await prisma.intervention.findMany({
       where,
@@ -25,12 +26,14 @@ router.get("/", requireInternalOrAuth, async (req, res) => {
   }
 });
 
-async function ensureStudentDetail(childSno: number) {
-  const existing = await prisma.studentDetail.findUnique({ where: { childSno } });
+async function ensureStudentDetail(childSno: number, academicYear: string) {
+  const existing = await prisma.studentDetail.findUnique({
+    where: { childSno_academicYear: { childSno, academicYear } },
+  });
   if (existing) return existing;
 
   const roster = await prisma.rosterStudent.findFirst({
-    where: { childSno },
+    where: { childSno, academicYear },
     include: { school: true },
   });
   if (!roster) throw new Error(`Student ${childSno} not found in either StudentDetail or RosterStudent`);
@@ -41,6 +44,7 @@ async function ensureStudentDetail(childSno: number) {
   return prisma.studentDetail.create({
     data: {
       childSno,
+      academicYear,
       schoolId: roster.schoolId,
       schoolName: roster.school.schoolName,
       districtName: roster.school.districtName,
@@ -66,12 +70,13 @@ async function ensureStudentDetail(childSno: number) {
 // POST /api/interventions
 router.post("/", requireInternalOrAuth, async (req, res) => {
   try {
-    const { childSno, actionType, status, assignedTo, notes } = req.body as {
+    const { childSno, actionType, status, assignedTo, notes, academicYear = "2024-25" } = req.body as {
       childSno?: number;
       actionType?: string;
       status?: string;
       assignedTo?: string;
       notes?: string;
+      academicYear?: string;
     };
 
     if (!childSno || !actionType || !assignedTo) {
@@ -79,11 +84,12 @@ router.post("/", requireInternalOrAuth, async (req, res) => {
       return;
     }
 
-    await ensureStudentDetail(childSno);
+    await ensureStudentDetail(childSno, academicYear);
 
     const intervention = await prisma.intervention.create({
       data: {
         childSno,
+        academicYear,
         actionType,
         status: status ?? "pending",
         assignedTo,

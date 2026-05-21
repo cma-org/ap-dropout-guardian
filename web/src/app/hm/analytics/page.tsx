@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
+import { useSearchParams } from "next/navigation";
 import type { RosterStudent } from "@/lib/types";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -28,12 +29,14 @@ const FACTOR_BAR_FILL: Record<"attendance" | "marks" | "migration" | "economic",
 export default function HMAnalyticsPage() {
   const { user } = useAuth();
   const { lang } = useLang();
+  const searchParams = useSearchParams();
+  const year = searchParams.get("year") ?? "2024-25";
   const [students, setStudents] = useState<RosterStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/api/schools/${user.schoolId}/roster`)
+      fetch(`/api/schools/${user.schoolId}/roster?academicYear=${year}`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
           // Inject mock data for consistency and professional UI
@@ -51,7 +54,7 @@ export default function HMAnalyticsPage() {
           setLoading(false);
         });
     }
-  }, [user]);
+  }, [user, year]);
 
   const criticalCount = students.filter(s => s.tier === "Critical").length;
   const highCount = students.filter(s => s.tier === "High").length;

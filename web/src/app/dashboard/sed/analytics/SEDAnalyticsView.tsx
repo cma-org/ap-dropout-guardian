@@ -30,7 +30,8 @@ interface DistrictRow {
 function buildDistricts(schools: School[]): DistrictRow[] {
   const m = new globalThis.Map<string, School[]>();
   for (const s of schools) {
-    const d = s.district_name ?? "Unknown";
+    const d = s.district_name;
+    if (!d || d === "Unknown") continue;
     if (!m.has(d)) m.set(d, []);
     m.get(d)!.push(s);
   }
@@ -106,7 +107,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function SEDAnalyticsView({ schools }: { schools: School[] }) {
+export default function SEDAnalyticsView({ schools, academicYear = "2024-25" }: { schools: School[]; academicYear?: string }) {
   const { lang } = useLang();
   const [activeTab, setActiveTab] = useState<"overview" | "district" | "trend" | "composition">("overview");
 
@@ -190,7 +191,7 @@ export default function SEDAnalyticsView({ schools }: { schools: School[] }) {
           </h1>
           <p className="text-sm text-zinc-500 mt-1">
             {lang === "en"
-              ? `Andhra Pradesh · ${totals.nDistricts} districts · ${fmtInt(totals.nSchools)} schools · AY 2024-25`
+              ? `Andhra Pradesh · ${totals.nDistricts} districts · ${fmtInt(totals.nSchools)} schools · AY ${academicYear}`
               : `ఆంధ్ర ప్రదేశ్ · ${totals.nDistricts} జిల్లాలు · ${fmtInt(totals.nSchools)} పాఠశాలలు`}
           </p>
         </div>
@@ -469,7 +470,7 @@ export default function SEDAnalyticsView({ schools }: { schools: School[] }) {
             <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
               <div>
                 <h3 className="text-sm font-bold text-zinc-700 uppercase tracking-wider">
-                  {lang === "en" ? "State-wide Trend AY 2024-25" : "రాష్ట్రవ్యాప్త ధోరణి 2024-25"}
+                  {lang === "en" ? `State-wide Trend AY ${academicYear}` : `రాష్ట్రవ్యాప్త ధోరణి ${academicYear}`}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   {lang === "en" ? "Flagged students, interventions initiated, and students retained month-over-month" : "ప్రమాద విద్యార్థులు, జోక్యాలు, నిలుపుదల"}

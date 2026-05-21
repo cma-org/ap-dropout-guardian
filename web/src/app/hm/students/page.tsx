@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
+import { ACADEMIC_YEARS, DEFAULT_YEAR, type AcademicYear } from "@/lib/academic-year";
 import type { RosterStudent } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
@@ -21,6 +23,12 @@ function rosterExtras(child_sno: number) {
 export default function HMStudentsListPage() {
   const { user } = useAuth();
   const { lang } = useLang();
+  const searchParams = useSearchParams();
+  const rawYear = searchParams.get("year");
+  const academicYear: AcademicYear =
+    rawYear && ACADEMIC_YEARS.includes(rawYear as AcademicYear)
+      ? (rawYear as AcademicYear)
+      : DEFAULT_YEAR;
   const [students, setStudents] = useState<RosterStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -33,19 +41,19 @@ export default function HMStudentsListPage() {
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/api/schools/${user.schoolId}/roster`)
+      setLoading(true);
+      fetch(`/api/schools/${user.schoolId}/roster?academicYear=${academicYear}`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
-          // Inject mock grades for consistency with dashboard logic
           const dataWithGrades = data.map((s: any, i: number) => ({
             ...s,
-            grade: i < data.length / 3 ? 8 : i < (2 * data.length) / 3 ? 9 : 10
+            grade: s.grade ?? (i < data.length / 3 ? 8 : i < (2 * data.length) / 3 ? 9 : 10),
           }));
           setStudents(dataWithGrades);
           setLoading(false);
         });
     }
-  }, [user]);
+  }, [user, academicYear]);
 
   const filtered = students.filter(s => {
     const matchesSearch = String(s.child_sno).includes(search);
@@ -183,7 +191,7 @@ export default function HMStudentsListPage() {
                   return (
                     <tr key={s.child_sno} className="hover:bg-zinc-50/50 transition-colors">
                       <td className="px-6 py-4">
-                        <Link href={`/student/${s.child_sno}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline">
+                        <Link href={`/student/${s.child_sno}?year=${academicYear}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline">
                           {s.child_sno}
                         </Link>
                       </td>

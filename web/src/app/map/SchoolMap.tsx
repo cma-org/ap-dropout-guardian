@@ -56,12 +56,14 @@ export default function SchoolMap({
   onSchoolSelect,
   onDistrictSelect,
   onSelectedDistrictChange,
+  mapKey = "default",
 }: {
   schools: School[];
   mandals: MandalInfo[];
   onSchoolSelect?: (school: School) => void;
   onDistrictSelect?: (districtName: string) => void;
   onSelectedDistrictChange?: (districtName: string | null) => void;
+  mapKey?: string;
 }) {
   const filtered = schools.filter((s) => s.n_students >= 20);
   const [geoData, setGeoData] = useState<any>(null);
@@ -150,7 +152,7 @@ export default function SchoolMap({
   };
 
   return (
-    <MapContainer center={AP_CENTER} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+    <MapContainer key={mapKey} center={AP_CENTER} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

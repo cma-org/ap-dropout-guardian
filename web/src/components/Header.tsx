@@ -1,10 +1,52 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_LABELS, ROLE_DASHBOARD } from "@/lib/auth";
-import { Languages, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useAcademicYear, type AcademicYear } from "@/lib/academic-year";
+import { Languages, LogOut, LayoutDashboard, ChevronDown, CalendarDays } from "lucide-react";
+
+function YearSelectorInner() {
+  const { year, setYear, years } = useAcademicYear();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[color:var(--ap-orange)]/20 hover:bg-[color:var(--ap-orange)]/30 border border-[color:var(--ap-orange)]/40 text-sm font-medium"
+        aria-label="Select academic year"
+      >
+        <CalendarDays className="h-4 w-4 text-[color:var(--ap-orange)]" />
+        <span className="hidden sm:inline text-white/90">AY</span>
+        <span className="font-semibold text-[color:var(--ap-orange)]">{year}</span>
+        <ChevronDown className="h-3.5 w-3.5 text-white/60" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-50">
+          <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wide border-b border-zinc-100">
+            Academic Year
+          </div>
+          {years.map((y) => (
+            <button
+              key={y}
+              onClick={() => { setYear(y as AcademicYear); setOpen(false); }}
+              className={`flex w-full items-center gap-2 px-3 py-2 text-sm ${
+                y === year
+                  ? "text-[color:var(--ap-navy)] font-semibold bg-blue-50"
+                  : "text-zinc-700 hover:bg-zinc-50"
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${y === year ? "bg-[color:var(--ap-orange)]" : ""}`} />
+              AY {y}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Header() {
   const { lang, toggle } = useLang();
@@ -32,6 +74,18 @@ export default function Header() {
         </Link>
 
         <nav className="flex items-center gap-1 ml-auto">
+          {/* Year selector — Suspense boundary required for useSearchParams */}
+          <Suspense
+            fallback={
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[color:var(--ap-orange)]/20 border border-[color:var(--ap-orange)]/40 text-sm font-medium">
+                <CalendarDays className="h-4 w-4 text-[color:var(--ap-orange)]" />
+                <span className="font-semibold text-[color:var(--ap-orange)]">2024-25</span>
+              </div>
+            }
+          >
+            <YearSelectorInner />
+          </Suspense>
+
           <button
             onClick={toggle}
             className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-sm"

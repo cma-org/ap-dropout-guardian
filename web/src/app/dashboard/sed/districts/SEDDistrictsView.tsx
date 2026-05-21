@@ -21,7 +21,8 @@ interface DistrictStats {
 function buildDistrictStats(schools: School[]): DistrictStats[] {
   const map = new Map<string, School[]>();
   for (const s of schools) {
-    const d = s.district_name ?? "Unknown";
+    const d = s.district_name;
+    if (!d || d === "Unknown") continue;
     if (!map.has(d)) map.set(d, []);
     map.get(d)!.push(s);
   }

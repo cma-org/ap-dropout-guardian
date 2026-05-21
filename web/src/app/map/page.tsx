@@ -2,11 +2,14 @@ import { getSchools, getMandals } from "@/lib/data";
 import type { MandalInfo } from "@/lib/types";
 import MapView from "./MapView";
 
-export const dynamic = "force-static";
+export default async function MapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string }>;
+}) {
+  const { year = "2024-25" } = await searchParams;
+  const [schools, mandals] = await Promise.all([getSchools(year), getMandals(year)]);
 
-export default async function MapPage() {
-  const [schools, mandals] = await Promise.all([getSchools(), getMandals()]);
-  // Keep only schools with coords
   const withCoords = schools.filter(
     (s) => s.latitude !== null && s.longitude !== null && Number.isFinite(s.latitude) && Number.isFinite(s.longitude)
   );
@@ -14,7 +17,6 @@ export default async function MapPage() {
     .filter((m) => m.n_students >= 50 && m.mandal_name)
     .sort((a, b) => b.avg_risk - a.avg_risk)
     .slice(0, 15);
-  // Map mandals to MandalInfo (filter out ones without coordinates)
   const mandalsWithCoords: MandalInfo[] = mandals
     .filter((m) => m.latitude !== null && m.longitude !== null && Number.isFinite(m.latitude) && Number.isFinite(m.longitude))
     .map((m) => ({
@@ -26,5 +28,5 @@ export default async function MapPage() {
       latitude: m.latitude!,
       longitude: m.longitude!,
     }));
-  return <MapView schools={withCoords} mandals={mandalsWithCoords} topMandals={topMandals} />;
+  return <MapView schools={withCoords} mandals={mandalsWithCoords} topMandals={topMandals} academicYear={year} />;
 }

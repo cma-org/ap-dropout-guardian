@@ -11,14 +11,15 @@ function internalHeaders() {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ districtName: string }> }
 ) {
   if (!apiUrl) return NextResponse.json({ error: "API_URL not configured" }, { status: 503 });
 
   try {
     const { districtName } = await params;
-    const res = await fetch(`${apiUrl}/api/analytics/district/${encodeURIComponent(districtName)}`, {
+    const { searchParams } = new URL(request.url);
+    const res = await fetch(`${apiUrl}/api/analytics/district/${encodeURIComponent(districtName)}?${searchParams.toString()}`, {
       headers: internalHeaders(),
       cache: "no-store",
     });

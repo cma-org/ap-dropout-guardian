@@ -18,7 +18,8 @@ export async function GET(
   }
 
   const { schoolId } = await params;
-  const res = await fetch(`${apiUrl}/api/schools/${schoolId}/roster`, {
+  const { searchParams } = new URL(_request.url);
+  const res = await fetch(`${apiUrl}/api/schools/${schoolId}/roster?${searchParams.toString()}`, {
     cache: "no-store",
   });
 

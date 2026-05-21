@@ -53,7 +53,8 @@ function makeStatewidetrend(totalFlagged: number) {
 function districtComparison(schools: School[]) {
   const byDistrict: Record<string, { flagged: number; students: number }> = {};
   for (const s of schools) {
-    const d = s.district_name ?? "Unknown";
+    const d = s.district_name;
+    if (!d || d === "Unknown") continue;
     if (!byDistrict[d]) byDistrict[d] = { flagged: 0, students: 0 };
     byDistrict[d].flagged += s.n_flagged;
     byDistrict[d].students += s.n_students;
@@ -98,7 +99,7 @@ export default function RTGSDashboard({
 
   const totalStudents = schools.reduce((s, sc) => s + sc.n_students, 0);
   const totalFlagged = schools.reduce((s, sc) => s + sc.n_flagged, 0);
-  const criticalSchools = schools.filter((s) => s.pct_critical > 5).length;
+  const criticalSchools = schools.filter((s) => s.pct_critical > 0.05).length;
   const trend = makeStatewidetrend(totalFlagged);
   const distData = districtComparison(schools);
 

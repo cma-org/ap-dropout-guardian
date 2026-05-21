@@ -164,11 +164,11 @@ function AcademicDriverCards({ student, lang }: { student: StudentDetail; lang: 
   const attLevel = att < 0.5 ? "HIGH" : att < 0.75 ? "MED" : "LOW";
 
   const fa = student.fa_avg;
-  const faPct = fa != null ? Math.round((fa / 300) * 100) : null;
+  const faPct = fa != null ? Math.min(100, Math.round((fa / 300) * 100)) : null;
   const faLevel = fa == null ? null : fa < 120 ? "HIGH" : fa < 200 ? "MED" : "LOW";
 
   const sa = student.sa_avg;
-  const saPct = sa != null ? Math.round((sa / 300) * 100) : null;
+  const saPct = sa != null ? Math.min(100, Math.round((sa / 300) * 100)) : null;
   const saLevel = sa == null ? null : sa < 120 ? "HIGH" : sa < 200 ? "MED" : "LOW";
 
   const levelCfg = {
@@ -466,14 +466,14 @@ export default function StudentDetailClient({
                   {
                     label: lang === "en" ? "FA Marks" : "FA మార్కులు",
                     value: student.fa_avg != null ? `${student.fa_avg.toFixed(0)}/300` : "—",
-                    sub: student.fa_avg != null ? `${Math.round((student.fa_avg / 300) * 100)}% score` : lang === "en" ? "not recorded" : "నమోదు లేదు",
+                    sub: student.fa_avg != null ? `${Math.min(100, Math.round((student.fa_avg / 300) * 100))}% score` : lang === "en" ? "not recorded" : "నమోదు లేదు",
                     color: student.fa_avg == null ? "text-zinc-400" : student.fa_avg < 120 ? "text-red-600" : student.fa_avg < 200 ? "text-orange-500" : "text-emerald-600",
                     bg: student.fa_avg == null ? "bg-zinc-50 border-zinc-100" : student.fa_avg < 120 ? "bg-red-50 border-red-100" : student.fa_avg < 200 ? "bg-orange-50 border-orange-100" : "bg-emerald-50 border-emerald-100",
                   },
                   {
                     label: lang === "en" ? "SA Marks" : "SA మార్కులు",
                     value: student.sa_avg != null ? `${student.sa_avg.toFixed(0)}/300` : "—",
-                    sub: student.sa_avg != null ? `${Math.round((student.sa_avg / 300) * 100)}% score` : lang === "en" ? "not recorded" : "నమోదు లేదు",
+                    sub: student.sa_avg != null ? `${Math.min(100, Math.round((student.sa_avg / 300) * 100))}% score` : lang === "en" ? "not recorded" : "నమోదు లేదు",
                     color: student.sa_avg == null ? "text-zinc-400" : student.sa_avg < 120 ? "text-red-600" : student.sa_avg < 200 ? "text-orange-500" : "text-emerald-600",
                     bg: student.sa_avg == null ? "bg-zinc-50 border-zinc-100" : student.sa_avg < 120 ? "bg-red-50 border-red-100" : student.sa_avg < 200 ? "bg-orange-50 border-orange-100" : "bg-emerald-50 border-emerald-100",
                   },
@@ -572,7 +572,7 @@ export default function StudentDetailClient({
                   {student.fa_avg.toFixed(0)}<span className="text-xs font-normal text-zinc-400">/300</span>
                 </div>
                 <div className="mt-1.5 h-1 rounded-full bg-blue-100">
-                  <div className="h-full rounded-full bg-blue-400" style={{ width: `${Math.round((student.fa_avg / 300) * 100)}%` }} />
+                  <div className="h-full rounded-full bg-blue-400" style={{ width: `${Math.min(100, Math.round((student.fa_avg / 300) * 100))}%` }} />
                 </div>
               </div>
             )}
@@ -583,7 +583,7 @@ export default function StudentDetailClient({
                   {student.sa_avg.toFixed(0)}<span className="text-xs font-normal text-zinc-400">/300</span>
                 </div>
                 <div className="mt-1.5 h-1 rounded-full bg-violet-100">
-                  <div className="h-full rounded-full bg-violet-400" style={{ width: `${Math.round((student.sa_avg / 300) * 100)}%` }} />
+                  <div className="h-full rounded-full bg-violet-400" style={{ width: `${Math.min(100, Math.round((student.sa_avg / 300) * 100))}%` }} />
                 </div>
               </div>
             )}

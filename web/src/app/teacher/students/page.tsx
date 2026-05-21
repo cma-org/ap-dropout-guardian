@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useLang, T } from "@/lib/i18n";
+import { ACADEMIC_YEARS, DEFAULT_YEAR, type AcademicYear } from "@/lib/academic-year";
 import type { RosterStudent } from "@/lib/types";
 import RiskBadge from "@/components/RiskBadge";
 import { pctFormat, cn } from "@/lib/utils";
@@ -46,6 +48,12 @@ function exportRosterCSV(roster: RosterStudent[], schoolName: string) {
 export default function StudentsListPage() {
   const { user } = useAuth();
   const { lang } = useLang();
+  const searchParams = useSearchParams();
+  const rawYear = searchParams.get("year");
+  const academicYear: AcademicYear =
+    rawYear && ACADEMIC_YEARS.includes(rawYear as AcademicYear)
+      ? (rawYear as AcademicYear)
+      : DEFAULT_YEAR;
   const [students, setStudents] = useState<RosterStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -57,18 +65,19 @@ export default function StudentsListPage() {
 
   useEffect(() => {
     if (user?.schoolId) {
-      fetch(`/api/schools/${user.schoolId}/roster`)
+      setLoading(true);
+      fetch(`/api/schools/${user.schoolId}/roster?academicYear=${academicYear}`)
         .then(r => r.ok ? r.json() : [])
         .then(data => {
           const withExtras = data.map((s: any) => ({
             ...s,
-            grade: rosterExtras(s.child_sno).grade,
+            grade: s.grade ?? rosterExtras(s.child_sno).grade,
           }));
           setStudents(withExtras);
           setLoading(false);
         });
     }
-  }, [user]);
+  }, [user, academicYear]);
 
   const filtered = students.filter(s => {
     const matchesSearch = String(s.child_sno).includes(search);
@@ -206,7 +215,7 @@ export default function StudentsListPage() {
                     <tr key={s.child_sno} className="hover:bg-zinc-50/60 transition-colors border-b border-zinc-100 last:border-0">
                       {/* Student ID */}
                       <td className="px-5 py-3.5">
-                        <Link href={`/student/${s.child_sno}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline tabular-nums">
+                        <Link href={`/student/${s.child_sno}?year=${academicYear}`} className="font-semibold text-[color:var(--ap-navy)] hover:underline tabular-nums">
                           {s.child_sno}
                         </Link>
                       </td>

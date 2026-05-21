@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { useLang, T } from "@/lib/i18n";
 import type { Alert, AlertStats, AlertPriority, AlertStatus } from "@/lib/types";
 import Link from "next/link";
@@ -271,7 +272,7 @@ function AlertCard({
         {/* Action buttons */}
         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-100">
           <Link
-            href={`/student/${alert.studentId}`}
+            href={`/student/${alert.studentId}?year=${year}`}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--ap-navy)] text-white rounded-lg text-sm font-medium hover:opacity-90"
           >
             <User className="h-4 w-4" />
@@ -384,6 +385,8 @@ export default function AlertsView({
   onRefresh,
 }: AlertsViewProps) {
   const { lang } = useLang();
+  const sp = useSearchParams();
+  const year = sp.get("year") ?? "2024-25";
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = () => {
