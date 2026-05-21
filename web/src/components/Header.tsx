@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useLang, T } from "@/lib/i18n";
 import { useAuth, ROLE_LABELS, ROLE_DASHBOARD } from "@/lib/auth";
@@ -52,6 +52,8 @@ export default function Header() {
   const { lang, toggle } = useLang();
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const isLandingPage = pathname === "/";
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = () => {
@@ -74,17 +76,19 @@ export default function Header() {
         </Link>
 
         <nav className="flex items-center gap-1 ml-auto">
-          {/* Year selector — Suspense boundary required for useSearchParams */}
-          <Suspense
-            fallback={
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[color:var(--ap-orange)]/20 border border-[color:var(--ap-orange)]/40 text-sm font-medium">
-                <CalendarDays className="h-4 w-4 text-[color:var(--ap-orange)]" />
-                <span className="font-semibold text-[color:var(--ap-orange)]">2024-25</span>
-              </div>
-            }
-          >
-            <YearSelectorInner />
-          </Suspense>
+          {/* Year selector — hidden on landing page */}
+          {!isLandingPage && (
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[color:var(--ap-orange)]/20 border border-[color:var(--ap-orange)]/40 text-sm font-medium">
+                  <CalendarDays className="h-4 w-4 text-[color:var(--ap-orange)]" />
+                  <span className="font-semibold text-[color:var(--ap-orange)]">2024-25</span>
+                </div>
+              }
+            >
+              <YearSelectorInner />
+            </Suspense>
+          )}
 
           <button
             onClick={toggle}
