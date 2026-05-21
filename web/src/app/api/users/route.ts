@@ -10,6 +10,24 @@ function internalHeaders() {
   };
 }
 
+export async function POST(request: NextRequest) {
+  if (!apiUrl) {
+    return NextResponse.json({ error: "API_URL not configured." }, { status: 503 });
+  }
+  try {
+    const body = await request.json();
+    const res = await fetch(`${apiUrl}/api/users`, {
+      method: "POST",
+      headers: internalHeaders(),
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json({ error: "Backend unreachable" }, { status: 503 });
+  }
+}
+
 /**
  * Proxy so client components can fetch user/teacher data without
  * exposing API_URL or causing CORS issues.

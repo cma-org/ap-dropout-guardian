@@ -19,8 +19,9 @@ const DATA_SOURCES = [
 
 const UPLOAD_SLOTS = [
   { id: "attendance", label: "Attendance Register (CSV)", labelTE: "హాజరు రిజిస్టర్ (CSV)", accept: ".csv", hint: "Monthly attendance — CHILDSNO, attendanceRate", template: "/templates/attendance.csv?v=2" },
-  { id: "marks", label: "FA/SA Marks (CSV)", nameTE: "FA/SA మార్కులు (CSV)", accept: ".csv", hint: "Subject-wise marks per student", template: "/templates/marks.csv?v=2" },
+  { id: "marks", label: "FA/SA Marks (CSV)", labelTE: "FA/SA మార్కులు (CSV)", accept: ".csv", hint: "Subject-wise marks per student", template: "/templates/marks.csv?v=2" },
   { id: "dropout", label: "Dropout Register (CSV)", labelTE: "డ్రాపౌట్ రిజిస్టర్ (CSV)", accept: ".csv", hint: "CHILDSNO of students who dropped out", template: "/templates/dropout.csv?v=2" },
+  { id: "teachers", label: "Teacher Roster (CSV)", labelTE: "ఉపాధ్యాయుల జాబితా (CSV)", accept: ".csv", hint: "name, email, password (optional)", template: "/templates/teachers.csv?v=1" },
 ];
 
 type UploadState = "idle" | "uploading" | "done" | "error";
@@ -180,7 +181,7 @@ export default function HMDataView({ school, metrics }: Props) {
           <h2 className="font-semibold text-zinc-900 text-sm">{lang === "en" ? "Upload Data Files" : "డేటా ఫైళ్లు అప్‌లోడ్ చేయండి"}</h2>
           <span className="ml-auto text-[10px] text-zinc-400">{lang === "en" ? "CSV Only · Max 50 MB" : "CSV మాత్రమే · గరిష్టం 50 MB"}</span>
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {UPLOAD_SLOTS.map((slot) => {
             const entry = uploads[slot.id];
             const isDragging = dragging === slot.id;

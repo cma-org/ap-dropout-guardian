@@ -14,6 +14,7 @@ import counsellorRouter from "./routes/counsellor";
 import webhooksRouter from "./routes/webhooks";
 import modelRouter from "./routes/model";
 import chatRouter from "./routes/chat";
+import schemesRouter from "./routes/schemes";
 import usersRouter from "./routes/users";
 import { uploadRouter } from "./routes/upload";
 import { auditLog } from "./middleware/auditLog";
@@ -49,6 +50,7 @@ app.use("/api/webhooks", webhooksRouter);
 app.use("/api/model", modelRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/schemes", schemesRouter);
 app.use("/api/analytics", analyticsRouter);
 app.use("/api/upload", uploadRouter);
 

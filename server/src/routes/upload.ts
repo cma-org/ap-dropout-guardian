@@ -1,4 +1,5 @@
 import { Router } from "express";
+import bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma";
 
 export const uploadRouter = Router();
@@ -68,11 +69,31 @@ uploadRouter.post("/", async (req, res) => {
         // Here we could handle dropout reasons.
         // For simplicity, we just count it as processed if it has a reason.
         if (record.reason) {
-          // Perhaps add an intervention or update student status
-          // Note: In schema there is no direct dropout reason field except in Driver model
-          // or Intervention. We'll just count it for now.
           updatedCount++;
         }
+      }
+    }
+
+    // Bulk teacher creation handled separately (no CHILDSNO)
+    if (slotId === "teachers") {
+      for (const record of records) {
+        const tName = record.name?.trim();
+        const tEmail = record.email?.trim();
+        const tPassword = record.password?.trim() || "changeme123";
+        if (!tName || !tEmail) continue;
+        const hashed = await bcrypt.hash(tPassword, 10);
+        await prisma.user.upsert({
+          where: { email: tEmail },
+          update: { name: tName, schoolId: schoolId ? BigInt(schoolId) : null },
+          create: {
+            name: tName,
+            email: tEmail,
+            password: hashed,
+            role: "teacher",
+            schoolId: schoolId ? BigInt(schoolId) : null,
+          },
+        });
+        updatedCount++;
       }
     }
 

@@ -41,65 +41,9 @@ import LEAPApiPanel from "@/components/LEAPApiPanel";
 import { useLang, T } from "@/lib/i18n";
 import { pctFormat, fmtInt, cn } from "@/lib/utils";
 
-type Scheme = { name: string; benefit: string };
-
-/* ─── scheme helpers ────────────────────────────────────────────────────────── */
-
-function getPersonalisedSchemes(student: StudentDetail, base: Scheme[]): Scheme[] {
-  const seen = new Set(base.map((s) => s.name));
-  const add = (s: Scheme) => { if (!seen.has(s.name)) { seen.add(s.name); out.push(s); } };
-  const out: Scheme[] = [...base];
-  const isFemale = student.gender === 2;
-  const caste = student.caste_clean as 1 | 2 | 3 | 4;
-  const isSCST = caste === 3 || caste === 4;
-  const isBC = caste === 2;
-
-  add({ name: "Amma Vodi", benefit: "₹15,000/year to mother — keep child enrolled in government school" });
-
-  if (isFemale) {
-    add({ name: "Kasturba Gandhi Balika Vidyalaya (KGBV)", benefit: "Free residential schooling for girls from vulnerable/migrant families" });
-    add({ name: "Aadabidda Nidhi", benefit: "₹1,500 financial assistance for economically vulnerable girls (TDP 2024)" });
-    add({ name: "AP Girls Hostel (Social Welfare)", benefit: "Free hostel for SC/ST/BC girls in district headquarters" });
-  }
-  if (isSCST) {
-    add({ name: "Post-Matric Scholarship RTF", benefit: "100% tuition & exam fee reimbursement for SC/ST students (Jnanabhumi)" });
-    add({ name: "Post-Matric Scholarship MTF", benefit: "Maintenance allowance: ₹550–₹1,200/month for SC/ST hostel/day scholars" });
-    add({ name: "NTR Vidyonnathi", benefit: "₹10,000 + 9-month civil services coaching for SC/ST/BC/EBC/Minority" });
-    add({ name: "Ambedkar Overseas Vidya Nidhi", benefit: "Financial aid for SC/ST students pursuing higher education abroad" });
-    if (isFemale) add({ name: "Rajiv Gandhi National Fellowship (SC/ST Girls)", benefit: "Monthly fellowship for M.Phil/PhD pursuits" });
-  }
-  if (isBC) {
-    add({ name: "Post-Matric Scholarship RTF (BC)", benefit: "Fee reimbursement for BC/EBC/Minority students (Jnanabhumi portal)" });
-    add({ name: "Post-Matric Scholarship MTF (BC)", benefit: "Maintenance allowance for BC hostel/day scholars" });
-    add({ name: "NTR Vidyonnathi", benefit: "₹10,000 + coaching for BC/EBC/Minority students in competitive exams" });
-    add({ name: "BC Welfare Residential Schools", benefit: "Free residential schooling for BC students in Classes 5–10" });
-  }
-  if (student.migration_flag) {
-    add({ name: "Samagra Shiksha Bridge Course", benefit: "Catch-up curriculum for children returning after seasonal migration" });
-  }
-  if (student.transport_allowance) {
-    add({ name: "AP Samagra Shiksha Transport Allowance", benefit: "₹2,400/year for students travelling >1 km to school" });
-  }
-  return out;
-}
+type SchemeItem = { id: string; emoji: string; name: string; benefit: string };
 
 /* ─── sub-components ────────────────────────────────────────────────────────── */
-
-function SchemeTag({ gender, caste, lang }: { gender: number; caste: number; lang: string }) {
-  const tags: string[] = [];
-  if (gender === 2) tags.push(lang === "en" ? "Female" : "స్త్రీ");
-  const c = { 1: "OC", 2: "BC", 3: "SC", 4: "ST" } as Record<number, string>;
-  if (c[caste]) tags.push(c[caste]);
-  if (!tags.length) return null;
-  return (
-    <div className="flex gap-1.5 mb-3 flex-wrap">
-      {tags.map(t => (
-        <span key={t} className="text-[10px] uppercase tracking-wide bg-[color:var(--ap-navy)]/10 border border-[color:var(--ap-navy)]/20 text-[color:var(--ap-navy)] rounded-full px-2.5 py-0.5 font-semibold">{t}</span>
-      ))}
-      <span className="text-[10px] text-zinc-400 self-center">— {lang === "en" ? "schemes personalised" : "వ్యక్తిగత పథకాలు"}</span>
-    </div>
-  );
-}
 
 function RiskGauge({ score, lang }: { score: number; lang: "en" | "te" }) {
   const pct = Math.round(score * 100);
@@ -381,6 +325,8 @@ export default function StudentDetailClient({
   const [logged, setLogged] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [interventionCount, setInterventionCount] = useState(0);
+  const [schemes, setSchemes] = useState<SchemeItem[]>([]);
+  const [schemesLoading, setSchemesLoading] = useState(true);
 
   const refreshState = async () => {
     try {
@@ -394,6 +340,30 @@ export default function StudentDetailClient({
   };
 
   useEffect(() => { refreshState(); }, [student.child_sno]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setSchemesLoading(true);
+    fetch("/api/schemes/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        drivers: student.drivers,
+        gender_label: student.gender_label,
+        migration_flag: student.migration_flag,
+        attendance_rate: student.attendance_rate,
+        fa_avg: student.fa_avg,
+        sa_avg: student.sa_avg,
+        family_income_bracket: student.family_income_bracket,
+        transport_allowance: student.transport_allowance,
+        parent_literacy: student.parent_literacy,
+        tier: student.tier,
+      }),
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.schemes) setSchemes(data.schemes); })
+      .catch(() => {})
+      .finally(() => setSchemesLoading(false));
+  }, [student.child_sno]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sms = lang === "en" ? counsellorTemplate.parent_sms_en : counsellorTemplate.parent_sms_te;
   const script = lang === "en" ? counsellorTemplate.teacher_script_en : counsellorTemplate.teacher_script_te;
@@ -727,25 +697,46 @@ export default function StudentDetailClient({
 
           {/* Recommended schemes */}
           <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-white border-b border-zinc-100">
-              <Shield className="h-3.5 w-3.5 text-[color:var(--ap-navy)]" />
-              <h3 className="text-xs font-bold text-zinc-700 uppercase tracking-wide">{T.student.schemes[lang]}</h3>
+            <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-zinc-100">
+              <div className="flex items-center gap-2">
+                <Shield className="h-3.5 w-3.5 text-[color:var(--ap-navy)]" />
+                <h3 className="text-xs font-bold text-zinc-700 uppercase tracking-wide">{T.student.schemes[lang]}</h3>
+              </div>
+              <span className="text-[10px] text-zinc-400 flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                {lang === "en" ? "AI-matched to risk drivers" : "AI అనుకూలీకరించబడింది"}
+              </span>
             </div>
-            <div className="p-4 space-y-3">
-              <SchemeTag gender={student.gender} caste={student.caste_clean} lang={lang} />
-              <ul className="space-y-2">
-                {getPersonalisedSchemes(student, counsellorTemplate.schemes).map((s, i) => (
-                  <li key={i} className="flex items-start gap-3 group">
-                    <div className="mt-0.5 w-5 h-5 rounded-full bg-[color:var(--ap-navy)]/10 flex items-center justify-center shrink-0">
-                      <ChevronRight className="h-3 w-3 text-[color:var(--ap-navy)]" />
+            <div className="p-4">
+              {schemesLoading ? (
+                <div className="space-y-2.5">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-start gap-3 animate-pulse">
+                      <div className="w-7 h-7 rounded-lg bg-zinc-100 shrink-0" />
+                      <div className="flex-1 space-y-1.5 pt-0.5">
+                        <div className="h-3 bg-zinc-100 rounded w-2/3" />
+                        <div className="h-2.5 bg-zinc-100 rounded w-full" />
+                      </div>
                     </div>
-                    <div className="text-sm leading-snug">
-                      <span className="font-semibold text-zinc-900">{s.name}</span>
-                      <span className="text-zinc-500"> — {s.benefit}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                  ))}
+                </div>
+              ) : schemes.length === 0 ? (
+                <p className="text-xs text-zinc-400 italic">{lang === "en" ? "No schemes available." : "పథకాలు అందుబాటులో లేవు."}</p>
+              ) : (
+                <ul className="space-y-3">
+                  {schemes.map((s) => (
+                    <li key={s.id} className="flex items-start gap-3 group">
+                      <div className="w-7 h-7 rounded-lg bg-[color:var(--ap-navy)]/8 flex items-center justify-center shrink-0 text-base leading-none">
+                        {s.emoji}
+                      </div>
+                      <div className="text-sm leading-snug">
+                        <span className="font-semibold text-zinc-900">{s.name}</span>
+                        <span className="text-zinc-500 text-xs"> — {s.benefit}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
