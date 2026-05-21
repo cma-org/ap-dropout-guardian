@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { School, Mandal } from "@/lib/types";
@@ -16,7 +16,11 @@ function riskColor(r: number): string {
 function SetView({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom);
+    try {
+      map.setView(center, zoom);
+    } catch {
+      // map may be in a transitioning/unmounted state — ignore
+    }
   }, [map, center[0], center[1], zoom]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
@@ -38,7 +42,21 @@ export default function DistrictSchoolMap({
   onMandalSelect: (m: Mandal) => void;
   onSchoolSelect: (s: School) => void;
 }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Clear Leaflet's internal DOM tracking on unmount so the container can be
+  // safely reused by a fresh MapContainer instance (e.g. after year change nav).
+  useEffect(() => {
+    return () => {
+      const el = wrapperRef.current?.querySelector(".leaflet-container");
+      if (el) {
+        (el as any)._leaflet_id = undefined;
+      }
+    };
+  }, []);
+
   return (
+    <div ref={wrapperRef} style={{ height: "100%", width: "100%" }}>
     <MapContainer
       center={center}
       zoom={zoom}
@@ -112,5 +130,6 @@ export default function DistrictSchoolMap({
         </CircleMarker>
       ))}
     </MapContainer>
+    </div>
   );
 }

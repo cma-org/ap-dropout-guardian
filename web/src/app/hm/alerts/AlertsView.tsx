@@ -136,11 +136,13 @@ function StatCard({
 function AlertCard({
   alert,
   lang,
+  year,
   onStatusUpdate,
   onEscalate,
 }: {
   alert: Alert;
   lang: "en" | "te";
+  year: string;
   onStatusUpdate: (alertId: string, status: AlertStatus) => void;
   onEscalate: (alertId: string) => void;
 }) {
@@ -531,6 +533,7 @@ export default function AlertsView({
               key={alert.id}
               alert={alert}
               lang={lang}
+              year={year}
               onStatusUpdate={onStatusUpdate}
               onEscalate={onEscalate}
             />

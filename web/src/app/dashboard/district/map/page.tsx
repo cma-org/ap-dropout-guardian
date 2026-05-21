@@ -3,8 +3,13 @@ import DistrictMapView from "./DistrictMapView";
 
 export const dynamic = "force-dynamic";
 
-export default async function DistrictMapPage() {
-  const [schools, mandals] = await Promise.all([getSchools(), getMandals()]);
+export default async function DistrictMapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string }>;
+}) {
+  const { year = "2024-25" } = await searchParams;
+  const [schools, mandals] = await Promise.all([getSchools(year), getMandals(year)]);
 
   const withCoords = schools.filter(
     (s) =>
@@ -18,5 +23,11 @@ export default async function DistrictMapPage() {
     (m) => m.latitude != null && m.longitude != null
   );
 
-  return <DistrictMapView schools={withCoords} mandals={withMandalCoords} />;
+  return (
+    <DistrictMapView
+      schools={withCoords}
+      mandals={withMandalCoords}
+      academicYear={year}
+    />
+  );
 }

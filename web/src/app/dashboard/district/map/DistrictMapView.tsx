@@ -238,11 +238,13 @@ function SchoolDetailPanel({
   fromMandal,
   onBack,
   lang,
+  academicYear,
 }: {
   school: School;
   fromMandal?: Mandal;
   onBack: () => void;
   lang: "en" | "te";
+  academicYear: string;
 }) {
   const { label, color } = riskLabel(school.avg_risk);
   const pct = school.n_students > 0 ? (school.n_flagged / school.n_students) * 100 : 0;
@@ -321,7 +323,7 @@ function SchoolDetailPanel({
         </div>
         <div className="text-lg font-bold text-zinc-900">{pctFormat(school.avg_risk, 1)}</div>
         <div className="text-[10px] text-zinc-400">
-          {lang === "en" ? "XGBoost model output, AY 2024-25" : "XGBoost మోడల్, AY 2024-25"}
+          {lang === "en" ? `XGBoost model output, AY ${academicYear}` : `XGBoost మోడల్, AY ${academicYear}`}
         </div>
       </div>
 
@@ -361,9 +363,11 @@ function SchoolDetailPanel({
 export default function DistrictMapView({
   schools,
   mandals,
+  academicYear = "2024-25",
 }: {
   schools: School[];
   mandals: Mandal[];
+  academicYear?: string;
 }) {
   const { user, isInitialized } = useAuth();
   const { lang } = useLang();
@@ -439,7 +443,7 @@ export default function DistrictMapView({
           <p className="text-sm text-zinc-500 mt-0.5">
             {districtSchools.length} schools ·{" "}
             <span className="text-red-600 font-medium">{fmtInt(totalFlagged)}</span> at-risk ·{" "}
-            {districtMandals.length} mandals · AY 2024-25
+            {districtMandals.length} mandals · AY {academicYear}
           </p>
         </div>
 
@@ -520,6 +524,7 @@ export default function DistrictMapView({
                   : setPanel({ mode: "mandals" })
               }
               lang={lang}
+              academicYear={academicYear}
             />
           )}
         </aside>
